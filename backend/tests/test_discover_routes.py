@@ -1028,3 +1028,24 @@ def test_owner_name_reaches_the_copy_a_friend_reads(tmp_path):
         assert resp.json() == {"error": "couldn't map your account — ask Ada"}
     finally:
         client.__exit__(None, None, None)
+
+
+def test_request_records_a_poster_hint_alongside_the_title(tmp_path):
+    """The Pipeline board is poster-led, and a fresh request is in no arr library."""
+    client, settings, _router = _make_client(tmp_path, _BROWSE_ROUTES)
+    try:
+        _login(client, settings)
+        resp = client.post(
+            "/api/discover/request", json={"media_type": "movie", "tmdb_id": 550}
+        )
+        assert resp.status_code == 201
+
+        conn = connect(settings.db_path)
+        try:
+            hint = conn.execute("SELECT * FROM title_hints").fetchone()
+        finally:
+            conn.close()
+        assert hint["title"] == "Fight Club"
+        assert hint["poster"] == "/jSziioSwPVrOy9Yow3XhWIBDjq1.jpg"
+    finally:
+        client.__exit__(None, None, None)

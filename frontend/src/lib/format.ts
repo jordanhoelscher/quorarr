@@ -131,6 +131,14 @@ const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
  *
  * Null in, null out, so a title with no artwork falls through to `Poster`'s
  * carved-stone placeholder rather than requesting `.../w342/null`.
+ *
+ * An already-absolute URL passes straight through. Pipeline cards take their
+ * artwork from whichever source knew the title first — the arrs (a full remote
+ * URL) or a Discover hint (a TMDB path) — and prefixing the base onto the
+ * former yields `.../w342/https://...`, which fetches nothing.
  */
-export const posterUrl = (path: string | null | undefined, size = 'w342'): string | null =>
-  path ? `${TMDB_IMAGE_BASE}/${size}${path.startsWith('/') ? '' : '/'}${path}` : null;
+export const posterUrl = (path: string | null | undefined, size = 'w342'): string | null => {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${TMDB_IMAGE_BASE}/${size}${path.startsWith('/') ? '' : '/'}${path}`;
+};

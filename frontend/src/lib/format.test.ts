@@ -192,3 +192,17 @@ describe('posterUrl', () => {
     expect(posterUrl('')).toBeNull();
   });
 });
+
+describe('posterUrl with an absolute URL', () => {
+  it('passes a Radarr/Sonarr remote URL through untouched', () => {
+    // Pipeline cards carry arr artwork, which is already a full URL --
+    // prefixing the TMDB base would produce an unfetchable hybrid.
+    expect(posterUrl('https://artworks.thetvdb.com/banners/bb.jpg')).toBe(
+      'https://artworks.thetvdb.com/banners/bb.jpg',
+    );
+  });
+
+  it('still expands a TMDB-relative path', () => {
+    expect(posterUrl('/abc.jpg')).toBe('https://image.tmdb.org/t/p/w342/abc.jpg');
+  });
+});

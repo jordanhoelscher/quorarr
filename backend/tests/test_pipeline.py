@@ -397,13 +397,13 @@ def test_pipeline_502_when_all_upstreams_down_and_cache_cold(tmp_path):
         client.__exit__(None, None, None)
 
 
-def test_enrich_titles_fills_missing_titles_from_library_maps():
+def test_enrich_media_fills_missing_titles_from_library_maps():
     requests = [
         {"media_type": "movie", "tmdb_id": 603, "tvdb_id": None},
         {"media_type": "tv", "tmdb_id": None, "tvdb_id": 81189},
         {"media_type": "tv", "tmdb_id": None, "tvdb_id": 99999},  # not in library
     ]
-    enriched = pipeline.enrich_titles(
+    enriched = pipeline.enrich_media(
         requests,
         movie_titles={603: "The Matrix"},
         series_titles={81189: "Breaking Bad"},
@@ -416,7 +416,7 @@ def test_enrich_titles_fills_missing_titles_from_library_maps():
 
 
 def test_build_uses_enriched_request_title_when_no_queue_match():
-    requests = pipeline.enrich_titles(
+    requests = pipeline.enrich_media(
         [{"media_type": "tv", "tvdb_id": 81189, "tmdb_id": None, "status": 4,
           "requested_by": "Sam", "created_at": NOW.isoformat()}],
         movie_titles={},
@@ -428,7 +428,7 @@ def test_build_uses_enriched_request_title_when_no_queue_match():
 
 
 def test_build_prefers_queue_title_over_enriched_title():
-    requests = pipeline.enrich_titles(
+    requests = pipeline.enrich_media(
         [{"media_type": "tv", "tvdb_id": 81189, "tmdb_id": None, "status": 3,
           "requested_by": "Sam", "created_at": NOW.isoformat()}],
         movie_titles={},
@@ -440,11 +440,134 @@ def test_build_prefers_queue_title_over_enriched_title():
     assert cards[0]["title"] == "Breaking.Bad.S05E14.1080p"
 
 
-def test_enrich_titles_falls_back_to_hint_titles_for_fresh_requests():
-    requests = pipeline.enrich_titles(
+def test_enrich_media_falls_back_to_hint_titles_for_fresh_requests():
+    requests = pipeline.enrich_media(
         [{"media_type": "movie", "tmdb_id": 999, "tvdb_id": None}],
         movie_titles={},
         series_titles={},
-        hint_titles={("movie", 999): "Brand New Movie"},
+        hints={("movie", 999): {"title": "Brand New Movie"}},
     )
     assert requests[0]["title"] == "Brand New Movie"
+
+
+# ------------------------------------------------------------------ posters
+
+
+def test_enrich_media_fills_posters_from_library_maps():
+    requests = [
+        {"media_type": "movie", "tmdb_id": 603, "tvdb_id": None},
+        {"media_type": "tv", "tmdb_id": None, "tvdb_id": 81189},
+        {"media_type": "tv", "tmdb_id": None, "tvdb_id": 99999},  # not in library
+    ]
+
+    enriched = pipeline.enrich_media(
+        requests,
+        movie_titles={603: "The Matrix"},
+        series_titles={81189: "Breaking Bad"},
+        movie_posters={603: "https://image.tmdb.org/t/p/original/matrix.jpg"},
+        series_posters={81189: "https://artworks.thetvdb.com/bb.jpg"},
+    )
+
+    assert enriched[0]["poster"] == "https://image.tmdb.org/t/p/original/matrix.jpg"
+    assert enriched[1]["poster"] == "https://artworks.thetvdb.com/bb.jpg"
+    assert enriched[2].get("poster") is None
+    # pure: input untouched
+    assert "poster" not in requests[0]
+
+
+def test_enrich_media_falls_back_to_hint_poster_for_a_fresh_request():
+    """A request made minutes ago is in no arr library yet, but Discover saw it."""
+    enriched = pipeline.enrich_media(
+        [{"media_type": "movie", "tmdb_id": 999, "tvdb_id": None}],
+        movie_titles={},
+        series_titles={},
+        hints={("movie", 999): {"title": "Brand New Movie", "poster": "/fresh.jpg"}},
+    )
+
+    assert enriched[0]["title"] == "Brand New Movie"
+    assert enriched[0]["poster"] == "/fresh.jpg"
+
+
+def test_build_carries_poster_and_tmdb_id_onto_the_card():
+    """The board is poster-led, and a tile has to be able to open its detail sheet."""
+    req = _request(media_type="movie", tmdb_id=603, status=3)
+    req["poster"] = "https://image.tmdb.org/t/p/original/matrix.jpg"
+
+    cards = pipeline.build([req], [], [], now=NOW)
+
+    assert cards[0]["poster"] == "https://image.tmdb.org/t/p/original/matrix.jpg"
+    assert cards[0]["tmdb_id"] == 603
+
+
+def test_build_emits_null_poster_when_nothing_supplied_one():
+    """No artwork anywhere is a stone placeholder, not a missing key."""
+    cards = pipeline.build([_request()], [], [], now=NOW)
+
+    assert cards[0]["poster"] is None
+
+
+RAW_RADARR_LIBRARY = [
+    {
+        "id": 1,
+        "title": "Dune",
+        "year": 2021,
+        "tmdbId": 438631,
+        "sizeOnDisk": 0,
+        "qualityProfileId": 4,
+        "hasFile": False,
+        "images": [{"coverType": "poster", "remoteUrl": "https://img.example/dune.jpg"}],
+    }
+]
+
+RAW_SONARR_LIBRARY = [
+    {
+        "id": 2,
+        "title": "The Bear",
+        "year": 2022,
+        "tvdbId": 371980,
+        "statistics": {"sizeOnDisk": 0, "episodeFileCount": 0},
+        "qualityProfileId": 4,
+        "seasons": [],
+        "images": [{"coverType": "poster", "remoteUrl": "https://img.example/bear.jpg"}],
+    }
+]
+
+
+def _library_route(request: httpx.Request) -> httpx.Response:
+    """Healthy upstreams that also answer the arr *library* endpoints.
+
+    ``_healthy_route`` answers every radarr/sonarr path with a queue body, so
+    title/poster enrichment silently fails there (by design -- it is wrapped
+    in a best-effort except). This route distinguishes the paths, which is
+    what makes enrichment observable over HTTP.
+    """
+    if request.url.host == "jellyseerr":
+        return httpx.Response(200, json=RAW_JELLYSEERR)
+    if request.url.host == "radarr":
+        if request.url.path.endswith("/queue"):
+            return httpx.Response(200, json=RAW_RADARR_QUEUE)
+        return httpx.Response(200, json=RAW_RADARR_LIBRARY)
+    if request.url.host == "sonarr":
+        if request.url.path.endswith("/queue"):
+            return httpx.Response(200, json=RAW_SONARR_QUEUE)
+        return httpx.Response(200, json=RAW_SONARR_LIBRARY)
+    return httpx.Response(404)
+
+
+def test_pipeline_route_serves_posters_and_tmdb_ids(tmp_path):
+    """Over HTTP, not just through the mapper -- the layer a 422 hides in."""
+    client, settings, _transport = _make_client(tmp_path, _library_route)
+    try:
+        _login(client, settings)
+        resp = client.get("/api/pipeline")
+        assert resp.status_code == 200
+        cards = resp.json()["cards"]
+
+        movie_card = next(c for c in cards if c["media_type"] == "movie")
+        assert movie_card["poster"] == "https://img.example/dune.jpg"
+        assert movie_card["tmdb_id"] == 438631
+
+        tv_card = next(c for c in cards if c["media_type"] == "tv")
+        assert tv_card["poster"] == "https://img.example/bear.jpg"
+    finally:
+        client.__exit__(None, None, None)

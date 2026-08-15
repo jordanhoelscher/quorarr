@@ -164,6 +164,8 @@ def _build_card(request: dict[str, Any], matched: list[dict[str, Any]]) -> dict[
     return {
         "title": title,
         "media_type": request.get("media_type"),
+        "tmdb_id": request.get("tmdb_id"),
+        "poster": request.get("poster"),
         "requested_by": request.get("requested_by"),
         "created_at": request.get("created_at"),
         "status": status,
@@ -174,42 +176,65 @@ def _build_card(request: dict[str, Any], matched: list[dict[str, Any]]) -> dict[
     }
 
 
-def enrich_titles(
+def enrich_media(
     requests: list[dict[str, Any]],
     *,
     movie_titles: dict[Any, str],
     series_titles: dict[Any, str],
-    hint_titles: dict[tuple[Any, Any], str] | None = None,
+    movie_posters: dict[Any, str] | None = None,
+    series_posters: dict[Any, str] | None = None,
+    hints: dict[tuple[Any, Any], dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Return copies of ``requests`` with ``title`` filled from library maps.
+    """Return copies of ``requests`` with ``title`` and ``poster`` filled in.
 
-    Jellyseerr's request API carries no media title, so without this every
-    card whose media isn't currently in a download queue renders a generic
-    fallback. Titles come from the (cached) Radarr/Sonarr libraries keyed by
-    ``tmdb_id``/``tvdb_id``. Pure function; the input dicts are not mutated.
+    Jellyseerr's request API carries neither a media title nor artwork, so
+    without this every card whose media isn't currently in a download queue
+    renders a generic fallback over blank stone. Both come from the (cached)
+    Radarr/Sonarr libraries keyed by ``tmdb_id``/``tvdb_id``, with
+    ``hints`` -- rows Discover recorded at request time -- covering media too
+    new to be in either library yet.
+
+    Poster values are whatever the source gave: the arrs return an absolute
+    remote URL, a Discover hint a TMDB-relative path. Both are valid inputs to
+    the frontend's ``posterUrl``. Pure function; the input dicts are not
+    mutated.
 
     Args:
         requests: Shaped jellyseerr requests.
         movie_titles: ``tmdb_id`` -> title from the Radarr library.
         series_titles: ``tvdb_id`` -> title from the Sonarr library.
+        movie_posters: ``tmdb_id`` -> poster URL from the Radarr library.
+        series_posters: ``tvdb_id`` -> poster URL from the Sonarr library.
+        hints: ``(media_type, tmdb_id)`` -> ``{"title", "poster"}`` for media
+            requested too recently to have reached an arr library.
 
     Returns:
-        New request dicts; ``title`` is set where a map has the id, left
+        New request dicts; each field is set where a map has the id, left
         absent/None otherwise.
     """
-    hint_titles = hint_titles or {}
+    movie_posters = movie_posters or {}
+    series_posters = series_posters or {}
+    hints = hints or {}
+
     enriched = []
     for request in requests:
         request = dict(request)
-        if request.get("title") is None:
-            if request.get("media_type") == "movie":
-                request["title"] = movie_titles.get(request.get("tmdb_id"))
-            elif request.get("media_type") == "tv":
-                request["title"] = series_titles.get(request.get("tvdb_id"))
-            if request.get("title") is None:
-                request["title"] = hint_titles.get(
-                    (request.get("media_type"), request.get("tmdb_id"))
-                )
+        media_type = request.get("media_type")
+        by_media: dict[str, tuple[dict[Any, Any], Any]] = {
+            "movie": ({"title": movie_titles, "poster": movie_posters}, request.get("tmdb_id")),
+            "tv": ({"title": series_titles, "poster": series_posters}, request.get("tvdb_id")),
+        }
+
+        for field in ("title", "poster"):
+            if request.get(field) is not None:
+                continue
+            maps, key = by_media.get(media_type, ({}, None))
+            if maps:
+                request[field] = maps[field].get(key)
+            if request.get(field) is None:
+                hint = hints.get((media_type, request.get("tmdb_id"))) or {}
+                request[field] = hint.get(field)
+
         enriched.append(request)
     return enriched
 

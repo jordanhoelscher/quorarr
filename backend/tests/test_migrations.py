@@ -184,3 +184,32 @@ def test_newer_db_is_left_alone(tmp_path, caplog):
     migrate(conn)
 
     assert _user_version(conn) == LATEST_VERSION + 5
+
+
+def test_fresh_db_has_title_hints_poster(tmp_path):
+    """The pipeline board is poster-led; a hint carries artwork as well as a name."""
+    conn = connect(str(tmp_path / "poster.db"))
+
+    migrate(conn)
+
+    assert "poster" in _columns(conn, "title_hints")
+
+
+def test_pre_poster_db_gains_the_column_in_place(tmp_path):
+    """A live 0.10.0 database has title_hints rows already -- they must survive."""
+    conn = connect(str(tmp_path / "upgrade.db"))
+    conn.executescript(
+        "CREATE TABLE title_hints ("
+        " media_type TEXT NOT NULL, tmdb_id INTEGER NOT NULL, title TEXT NOT NULL,"
+        " PRIMARY KEY (media_type, tmdb_id));"
+        "INSERT INTO title_hints (media_type, tmdb_id, title)"
+        " VALUES ('movie', 42, 'Existing Hint');"
+        "PRAGMA user_version = 1;"
+    )
+
+    migrate(conn)
+
+    assert "poster" in _columns(conn, "title_hints")
+    row = conn.execute("SELECT title, poster FROM title_hints WHERE tmdb_id = 42").fetchone()
+    assert row["title"] == "Existing Hint"
+    assert row["poster"] is None

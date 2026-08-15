@@ -130,6 +130,10 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 #: ``(target_version, sql)`` in ascending order. Append only.
 MIGRATIONS: list[tuple[int, str]] = [
     (1, _BASELINE),
+    # 2: title_hints.poster -- see _ADDED_COLUMNS. Pure column add, no SQL of
+    # its own: the table itself already exists at every version that has run
+    # the baseline.
+    (2, ""),
 ]
 
 #: Columns the baseline's ``CREATE TABLE IF NOT EXISTS`` cannot reach on a
@@ -138,6 +142,10 @@ MIGRATIONS: list[tuple[int, str]] = [
 #: it has the table without the column.
 _ADDED_COLUMNS: dict[int, dict[str, dict[str, str]]] = {
     1: {"users": {"revoked": "INTEGER NOT NULL DEFAULT 0"}},
+    # Artwork for a request too new to be in any arr library. Nullable on
+    # purpose: hints written before 1.1.0 have a title and no poster, and a
+    # missing poster is a stone placeholder, not an error.
+    2: {"title_hints": {"poster": "TEXT"}},
 }
 
 

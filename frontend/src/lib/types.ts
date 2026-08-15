@@ -37,6 +37,14 @@ export interface PipelineCard {
   /** Null when nothing in the arr queue matched — jellyseerr carries no title. */
   title: string | null;
   media_type: string;
+  /** Opens the Discover detail sheet for this tile. Null on a malformed request. */
+  tmdb_id: number | null;
+  /**
+   * Artwork, from whichever source knew the title first: an absolute URL from
+   * the arrs, or a TMDB-relative path from a Discover hint. `posterUrl` takes
+   * either. Null falls through to `Poster`'s carved stone.
+   */
+  poster: string | null;
   requested_by: string | null;
   created_at: string | null;
   status: PipelineStatus;

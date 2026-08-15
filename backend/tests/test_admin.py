@@ -1150,3 +1150,31 @@ def test_a_settled_4k_row_cannot_be_settled_twice(tmp_path):
         assert _read_4k(settings, req_id)["state"] == "denied"
     finally:
         client.__exit__(None, None, None)
+
+
+def test_approving_4k_keeps_a_poster_hint_the_member_route_already_wrote(tmp_path):
+    """The 4K queue carries no artwork -- refiling must not wipe what Discover saw."""
+    client, settings, _router = _make_client(tmp_path, _4K_ROUTES)
+    try:
+        _login(client, settings)
+        req_id = _insert_4k_request(settings)
+
+        conn = connect(settings.db_path)
+        try:
+            conn.execute(
+                "INSERT INTO title_hints (media_type, tmdb_id, title, poster)"
+                " VALUES ('movie', 550, 'Fight Club', '/already-known.jpg')"
+            )
+        finally:
+            conn.close()
+
+        client.post(f"/api/admin/discover-4k/{req_id}/approve")
+
+        conn = connect(settings.db_path)
+        try:
+            hint = conn.execute("SELECT * FROM title_hints").fetchone()
+        finally:
+            conn.close()
+        assert hint["poster"] == "/already-known.jpg"
+    finally:
+        client.__exit__(None, None, None)

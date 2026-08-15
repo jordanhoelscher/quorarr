@@ -493,8 +493,13 @@ async def _file_discover_4k_row(
     )
     # Same hint the member route writes: the Pipeline board enriches from the
     # arr libraries, which do not know about a request filed seconds ago.
+    #
+    # Upsert rather than INSERT OR REPLACE: the 4K queue stores no artwork, so
+    # a replace would null out a poster the member route had already recorded
+    # for this title and leave the tile as blank stone.
     db.execute(
-        "INSERT OR REPLACE INTO title_hints (media_type, tmdb_id, title) VALUES (?, ?, ?)",
+        "INSERT INTO title_hints (media_type, tmdb_id, title) VALUES (?, ?, ?)"
+        " ON CONFLICT(media_type, tmdb_id) DO UPDATE SET title = excluded.title",
         (row["media_type"], row["tmdb_id"], row["title"]),
     )
     return created

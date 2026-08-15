@@ -467,12 +467,13 @@ async def post_request(
             )
         return _unreachable(exc)
 
-    # Remember the title locally: the Pipeline board enriches from the arr
-    # libraries, which don't contain a brand-new request yet (and the library
-    # cache is minutes stale). Server-derived from the cached detail.
+    # Remember the title and artwork locally: the Pipeline board enriches from
+    # the arr libraries, which don't contain a brand-new request yet (and the
+    # library cache is minutes stale). Server-derived from the cached detail.
     db.execute(
-        "INSERT OR REPLACE INTO title_hints (media_type, tmdb_id, title) VALUES (?, ?, ?)",
-        (body.media_type, body.tmdb_id, title),
+        "INSERT OR REPLACE INTO title_hints (media_type, tmdb_id, title, poster)"
+        " VALUES (?, ?, ?, ?)",
+        (body.media_type, body.tmdb_id, title, detail.get("poster_path")),
     )
     scope = f" (seasons {', '.join(str(n) for n in seasons)})" if seasons else ""
     db.execute(

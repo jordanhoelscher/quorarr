@@ -156,16 +156,22 @@ async def get_pipeline(
         movies = await radarr.list_movies(http, settings, ttl=600)
         series = await sonarr.list_series(http, settings, ttl=600)
         hints = {
-            (r["media_type"], r["tmdb_id"]): r["title"]
+            (r["media_type"], r["tmdb_id"]): {"title": r["title"], "poster": r["poster"]}
             for r in db.execute(
-                "SELECT media_type, tmdb_id, title FROM title_hints"
+                "SELECT media_type, tmdb_id, title, poster FROM title_hints"
             ).fetchall()
         }
-        requests = pipeline.enrich_titles(
+        requests = pipeline.enrich_media(
             requests,
             movie_titles={m["tmdb_id"]: m["title"] for m in movies if m.get("tmdb_id")},
             series_titles={s["tvdb_id"]: s["title"] for s in series if s.get("tvdb_id")},
-            hint_titles=hints,
+            movie_posters={
+                m["tmdb_id"]: m["poster"] for m in movies if m.get("tmdb_id") and m.get("poster")
+            },
+            series_posters={
+                s["tvdb_id"]: s["poster"] for s in series if s.get("tvdb_id") and s.get("poster")
+            },
+            hints=hints,
         )
     except Exception:  # noqa: BLE001 -- enrichment is best-effort by design
         pass

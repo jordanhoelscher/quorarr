@@ -7,6 +7,42 @@ All notable changes to this project are documented here. The format is loosely
 Versions before 0.9.0 predate the public repository; they are summarised rather
 than itemised, since their history lives in a private monorepo.
 
+## [1.1.0] — 2026-08-15
+
+### Added
+
+- **The pipeline board is a staged poster wall.** Requests group under the stage
+  they are actually in — Downloading, Finding a copy, Partly there, Awaiting
+  approval, Ready to watch — three poster tiles across, with a stage omitted
+  entirely when nothing is in it. Status is carried by the artwork: dimmed means
+  waiting, a lit tile with a progress bar means transferring, a check means
+  watchable now, and the single warm mark on the page flags a stall. Previously
+  this view was a flat list of text cards whose one visual element, the progress
+  bar, is absent whenever both download queues are idle — which is most of the
+  time. Grouping rules live in `frontend/src/lib/pipelineStages.ts` and are
+  tested independently of the view; a status the build does not recognise folds
+  into "Finding a copy" rather than disappearing from the board.
+- **Pipeline cards carry poster art and a TMDB id.** Artwork comes from whichever
+  source knew the title first: the Radarr/Sonarr libraries, or a hint recorded at
+  request time for media too new to be in either. Tapping a tile opens the same
+  detail sheet Discover uses, with availability pinned to what the board already
+  knows, so it can never offer a Request button for something already in flight.
+- `title_hints.poster` (migration 2), so a request filed seconds ago has a face
+  rather than blank stone.
+
+### Fixed
+
+- `posterUrl` no longer prefixes the TMDB base onto an already-absolute URL,
+  which produced an unfetchable `.../w342/https://…`. Radarr and Sonarr return
+  absolute poster URLs, so this affected every arr-sourced tile.
+- Approving a parked 4K request no longer wipes a poster hint already recorded
+  for that title. The 4K queue stores no artwork and the write was an
+  `INSERT OR REPLACE`; it is now an upsert that leaves the poster alone.
+
+## [1.0.0] — 2026-08-15
+
+Initial public release. No functional change from 0.10.0.
+
 ## [0.10.0] — 2026-08-15
 
 ### Added
