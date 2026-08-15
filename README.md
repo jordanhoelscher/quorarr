@@ -150,16 +150,15 @@ live state.
 
 ## Screenshots
 
-<!-- TODO: replace these blocks before launch. Phone-width captures preferred; the design
-     is the pitch. -->
+| Discover | Browse (Trending, filtered) | Request sheet (seasons + quality) |
+| -------- | ---------------------------- | ---------------------------------- |
+| ![Discover](docs/screenshots/discover.png) | ![Browse](docs/screenshots/browse.png) | ![Request sheet](docs/screenshots/request-sheet.png) |
 
-| Discover | Season picker | Flagged / veto | Owner approvals |
-| -------- | ------------- | -------------- | --------------- |
-| _screenshot_ | _screenshot_ | _screenshot_ | _screenshot_ |
+| Flagged / veto | Storage | Owner approvals |
+| --------------- | ------- | ---------------- |
+| ![Flagged](docs/screenshots/flagged.png) | ![Storage](docs/screenshots/storage.png) | ![Approvals](docs/screenshots/approvals.png) |
 
-| Storage | Pipeline |
-| ------- | -------- |
-| _screenshot_ | _screenshot_ |
+Screenshots from the author's own deployment, branded "Pensieve" via `APP_NAME`.
 
 ---
 
