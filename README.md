@@ -222,6 +222,10 @@ Then point your reverse proxy at `quorarr:8000` and open the site. The first acc
 in whose Plex account id matches `PLEX_OWNER_ACCOUNT_ID` becomes the owner; everyone else
 who has a share on your server becomes a member.
 
+**Upgrading is `docker compose pull` + `up -d`.** Schema migrations run automatically at
+startup and are stamped into the database file itself — back up `pensieve.db` first, and see
+`docs/upgrading.md`.
+
 **Quorarr refuses to boot on a half-configured deploy.** A missing required variable, or a
 quality-profile id of `0`, is a startup error rather than a runtime surprise — filing
 requests against profile id `0` would silently land them wherever the arr felt like.

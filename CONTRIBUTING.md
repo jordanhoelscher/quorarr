@@ -74,6 +74,28 @@ Requires Node 22+.
 
 ---
 
+## Adding a migration
+
+The schema is versioned by `PRAGMA user_version`, and `backend/pensieve/migrations.py`
+holds an append-only `MIGRATIONS` list of `(target_version, sql)`. To change the schema,
+append `(n + 1, "...")` to that list and add the same DDL to migration 1's baseline so a
+fresh install gets it in one step. Startup applies every pending migration in order, each
+in its own transaction that also writes the version stamp — so a step either lands whole
+or not at all, and a failure is a failed startup rather than a service running on a schema
+it could not apply. Never edit a migration that has shipped: a deployment that already ran
+it will not run it again, so an edit only changes what new installs get, and two databases
+end up claiming the same version with different shapes.
+
+`ALTER TABLE ... ADD COLUMN` on a table the baseline already creates is the one case the
+SQL alone cannot express, since `CREATE TABLE IF NOT EXISTS` is a no-op on an existing
+table. Add the column to both the baseline and the `_ADDED_COLUMNS` map, which checks
+`PRAGMA table_info` before altering — do not catch `OperationalError` to paper over "it is
+already there", which is what this system replaced. `tests/test_migrations.py` covers a
+fresh database, a simulated pre-versioning one with rows in it, a failing migration, and a
+re-run; a schema change should extend it.
+
+---
+
 ## How changes are expected to be written
 
 **Tests first.** Every behavioural change should arrive with a test that fails without it.

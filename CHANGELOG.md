@@ -7,6 +7,30 @@ All notable changes to this project are documented here. The format is loosely
 Versions before 0.9.0 predate the public repository; they are summarised rather
 than itemised, since their history lives in a private monorepo.
 
+## [0.10.0] — 2026-08-15
+
+### Added
+
+- **Real schema migrations.** The database now carries its own version in
+  `PRAGMA user_version`, and startup applies each pending migration in order,
+  every one inside a transaction that also writes the version stamp. Upgrading
+  is still just "pull and restart"; what changed is that a schema change now has
+  a defined, resumable path onto a database that already has data in it.
+  Migration 1 is the 0.9.1 schema as a baseline, written to adopt an existing
+  pre-versioning database in place — no data is rebuilt or moved.
+- `docs/upgrading.md`: how the versioning works, how to back up a WAL-mode
+  SQLite file consistently, and what a failed migration looks like.
+
+### Changed
+
+- A migration that fails is now a failed startup with the real error, instead of
+  the previous `ALTER TABLE ... except OperationalError: pass`, which could not
+  tell "this column already exists" from "this database is broken" and reported
+  neither.
+- This package's `INFO` logs are now visible under uvicorn. Nothing configured
+  logging, so the root logger's last-resort handler dropped everything below
+  `WARNING` — including the one line that tells an operator a migration ran.
+
 ## [0.9.1] — 2026-08-15
 
 ### Fixed

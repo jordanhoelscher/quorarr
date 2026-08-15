@@ -136,9 +136,29 @@ async def _sweep_loop(app: FastAPI, settings: Settings) -> None:
             logger.exception("share reconciliation tick failed")
 
 
+def _configure_logging() -> None:
+    """Make this package's INFO lines visible under uvicorn.
+
+    Nothing else configures logging, so without this the root logger has no
+    handler and Python's last-resort one drops anything below WARNING -- which
+    silently included "applied migration 1", the single line that tells an
+    operator their upgrade actually touched the schema. Scoped to the
+    ``pensieve`` logger rather than the root one so httpx does not narrate
+    every upstream call. Idempotent: ``create_app`` runs once per process in
+    production and once per test in the suite.
+    """
+    logger = logging.getLogger("pensieve")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)s:     %(name)s - %(message)s"))
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Build the app; settings override for tests."""
     settings = settings or get_settings()
+    _configure_logging()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
