@@ -1,0 +1,55 @@
+{
+  "results": [
+    {
+      "id": 1,
+      "createdAt": "2024-08-01T10:30:00Z",
+      "media": {
+        "mediaType": "movie",
+        "tmdbId": 550,
+        "tvdbId": null,
+        "status": 5
+      },
+      "requestedBy": {
+        "id": 1,
+        "displayName": "Sam",
+        "plexUsername": null
+      }
+    },
+    {
+      "id": 2,
+      "createdAt": "2024-08-02T14:15:00Z",
+      "media": {
+        "mediaType": "tv",
+        "tmdbId": 1399,
+        "tvdbId": 121361,
+        "status": 3
+      },
+      "requestedBy": {
+        "id": 2,
+        "displayName": null,
+        "plexUsername": "alexplex"
+      }
+    },
+    {
+      "id": 3,
+      "createdAt": "2024-08-03T08:45:00Z",
+      "media": {
+        "mediaType": "movie",
+        "tmdbId": 278,
+        "tvdbId": null,
+        "status": 2
+      },
+      "requestedBy": {
+        "id": 3,
+        "displayName": "Ada",
+        "plexUsername": "adaplex"
+      }
+    }
+  ],
+  "pageInfo": {
+    "pages": 1,
+    "pageSize": 50,
+    "results": 3,
+    "totalResults": 3
+  }
+}

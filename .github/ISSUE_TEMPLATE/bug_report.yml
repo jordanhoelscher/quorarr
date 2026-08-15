@@ -1,0 +1,140 @@
+name: Bug report
+description: Something in Quorarr behaves incorrectly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. The stack details below are not bureaucracy — most
+        reports that stall, stall because it's impossible to tell which side of the
+        Plex/Jellyseerr/arr boundary the problem is on.
+
+        **Do not report a security vulnerability here.** See SECURITY.md for the private
+        channel.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Sign in as a member
+        2. Open Discover, pick a series
+        3. Request seasons 1-2 at 720p
+        4. ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Quorarr version
+      description: The version in the app footer, or from `/health`.
+      placeholder: "0.9.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: role
+    attributes:
+      label: Which role hit the bug?
+      options:
+        - Owner
+        - Member
+        - Signed-out / access request flow
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: plex
+    attributes:
+      label: Plex Media Server version
+      placeholder: "1.41.x"
+    validations:
+      required: true
+
+  - type: input
+    id: jellyseerr
+    attributes:
+      label: Jellyseerr version
+      description: If you run Overseerr instead, say so here — that combination is untested.
+      placeholder: "2.x"
+    validations:
+      required: true
+
+  - type: input
+    id: radarr
+    attributes:
+      label: Radarr version
+      placeholder: "5.x"
+    validations:
+      required: true
+
+  - type: input
+    id: sonarr
+    attributes:
+      label: Sonarr version
+      placeholder: "4.x"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deploy
+    attributes:
+      label: How do you deploy Quorarr?
+      options:
+        - Docker Compose with the published GHCR image
+        - Docker Compose building from source
+        - Docker run
+        - Kubernetes
+        - From source, no container
+        - Other (describe below)
+    validations:
+      required: true
+
+  - type: input
+    id: proxy
+    attributes:
+      label: Reverse proxy
+      description: Which proxy, and does the Quorarr container publish a port to the host?
+      placeholder: "Caddy, no published port"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: client
+    attributes:
+      label: Where did you see it?
+      options:
+        - iOS — installed to Home Screen (PWA)
+        - iOS — Safari tab
+        - Android — installed (PWA)
+        - Android — browser tab
+        - Desktop browser
+        - Not UI-specific / API
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Container logs
+      description: >
+        `docker logs quorarr` around the time it happened. Redact tokens and API keys —
+        and if you find one printed in a log line, that itself is a bug worth reporting
+        privately.
+      render: shell
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, network tab responses, related upstream state.

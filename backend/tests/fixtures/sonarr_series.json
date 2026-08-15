@@ -1,0 +1,56 @@
+[
+  {
+    "id": 201,
+    "title": "The Bear",
+    "year": 2022,
+    "tvdbId": 371980,
+    "qualityProfileId": 4,
+    "added": "2023-06-01T00:00:00Z",
+    "images": [
+      {"coverType": "poster", "remoteUrl": "https://image.tmdb.org/t/p/original/poster-bear.jpg"},
+      {"coverType": "fanart", "remoteUrl": "https://image.tmdb.org/t/p/original/fanart-bear.jpg"}
+    ],
+    "statistics": {"sizeOnDisk": 10737418240, "episodeFileCount": 18},
+    "seasons": [
+      {
+        "seasonNumber": 0,
+        "monitored": false,
+        "statistics": {"sizeOnDisk": 0, "episodeFileCount": 0, "totalEpisodeCount": 2}
+      },
+      {
+        "seasonNumber": 1,
+        "monitored": true,
+        "statistics": {"sizeOnDisk": 5368709120, "episodeFileCount": 8, "totalEpisodeCount": 8}
+      },
+      {
+        "seasonNumber": 2,
+        "monitored": true,
+        "statistics": {"sizeOnDisk": 5368709120, "episodeFileCount": 10, "totalEpisodeCount": 10}
+      }
+    ]
+  },
+  {
+    "id": 202,
+    "title": "Doctor Who",
+    "year": 2005,
+    "tvdbId": 78804,
+    "qualityProfileId": 5,
+    "added": "2021-01-15T00:00:00Z",
+    "images": [
+      {"coverType": "poster", "remoteUrl": "https://image.tmdb.org/t/p/original/poster-who.jpg"}
+    ],
+    "statistics": {"sizeOnDisk": 21474836480, "episodeFileCount": 45},
+    "seasons": [
+      {
+        "seasonNumber": 0,
+        "monitored": true,
+        "statistics": {"sizeOnDisk": 1073741824, "episodeFileCount": 3, "totalEpisodeCount": 20}
+      },
+      {
+        "seasonNumber": 1,
+        "monitored": true,
+        "statistics": {"sizeOnDisk": 10200547328, "episodeFileCount": 13, "totalEpisodeCount": 13}
+      }
+    ]
+  }
+]

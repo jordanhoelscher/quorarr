@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- %APP_NAME% is substituted at build time from $APP_NAME (vite.config.ts),
+         and again at runtime from GET /api/config once that answers
+         (src/lib/branding.svelte.ts). Both matter: this one is the tab title
+         before any JavaScript runs. -->
+    <title>%APP_NAME%</title>
+    <meta name="description" content="What's on the server, what's coming, and what's on its way out." />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <meta name="theme-color" content="#05070b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Also rewritten at runtime: iOS reads this from the live DOM when a
+         Home Screen icon is added, so the instance name wins over this. -->
+    <meta name="apple-mobile-web-app-title" content="%APP_NAME%" />
+
+    <style>
+      /* Paint the basin before the bundle lands, so there is no white flash. */
+      html {
+        background: #05070b;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

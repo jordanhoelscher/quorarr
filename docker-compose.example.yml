@@ -1,0 +1,66 @@
+# Quorarr — example Docker Compose deployment.
+#
+# Copy to docker-compose.yml, copy .env.example to quorarr.env, fill that in
+# (chmod 600 it), and adjust the paths and network names below.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# READ THIS FIRST: there is deliberately no `ports:` mapping.
+#
+# The image ships FORWARDED_ALLOW_IPS=*, so uvicorn trusts the X-Forwarded-For
+# header from whatever connects to it. That is correct when the only thing that
+# *can* connect is your reverse proxy on an internal Docker network — and wrong
+# the moment the port is published, because the login rate limiter keys on the
+# client IP. If you must expose it more widely, set FORWARDED_ALLOW_IPS to your
+# proxy's address instead.
+#
+# Put your reverse proxy on the same network and proxy to `quorarr:8000`.
+# Session cookies are issued `Secure`, so the public origin must be HTTPS or
+# sign-in will not work at all. See docs/setup-guide.md for proxy snippets.
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  quorarr:
+    image: ghcr.io/jordanhoelscher/quorarr:latest
+    # To build from a source checkout instead (context is the repo root):
+    # build:
+    #   context: .
+    #   dockerfile: docker/Dockerfile
+    container_name: quorarr
+    restart: unless-stopped
+    env_file:
+      - ./quorarr.env
+    volumes:
+      # Local state: members, deletion flags, quality requests, access
+      # requests, push subscriptions, audit log. Back this up — losing it
+      # loses every in-flight veto window. Must match DB_PATH's directory.
+      - ./quorarr-data:/data
+
+      # Your media library, read-only. Quorarr never writes here and never
+      # deletes files itself (deletions go through Radarr/Sonarr); it only
+      # reads free-space numbers off this filesystem for the storage view.
+      # The path inside the container must match MEDIA_MOUNT.
+      - /srv/media:/media:ro
+    networks:
+      # Must reach radarr, sonarr, and jellyseerr by the hostnames in
+      # RADARR_URL / SONARR_URL / JELLYSEERR_URL.
+      - media-net
+      # Your reverse proxy's network, if it is a different one.
+      # - proxy-net
+    healthcheck:
+      # The image ships this healthcheck; repeated here so it is visible.
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  media-net:
+    external: true
+  # proxy-net:
+  #   external: true

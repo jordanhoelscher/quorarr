@@ -1,0 +1,74 @@
+{
+  "id": 1399,
+  "name": "Game of Thrones",
+  "firstAirDate": "2011-04-17",
+  "posterPath": "/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg",
+  "overview": "Seven noble families fight for control of the mythical land of Westeros. Friction between the houses leads to full-scale war. All while a very ancient evil awakens in the farthest north. Amidst the war, a neglected military order of misfits, the Night's Watch, is all that stands between the realms of men and icy horrors beyond.",
+  "voteAverage": 8.469,
+  "numberOfSeasons": 8,
+  "status": "Ended",
+  "seasons": [
+    {
+      "id": 3627,
+      "airDate": "2010-12-05",
+      "episodeCount": 300,
+      "name": "Specials",
+      "seasonNumber": 0,
+      "posterPath": "/aos6lC1JGYt6ZRL85lgstNsfSeY.jpg"
+    },
+    {
+      "id": 3624,
+      "airDate": "2011-04-17",
+      "episodeCount": 10,
+      "name": "Season 1",
+      "seasonNumber": 1,
+      "posterPath": "/wgfKiqzuMrFIkU1M68DDDY8kGC1.jpg"
+    },
+    {
+      "id": 3625,
+      "airDate": "2012-04-01",
+      "episodeCount": 10,
+      "name": "Season 2",
+      "seasonNumber": 2,
+      "posterPath": "/9xfNkPwDOqyeUvfNhs1XlWA0esP.jpg"
+    },
+    {
+      "id": 3626,
+      "airDate": "2013-03-31",
+      "episodeCount": 10,
+      "name": "Season 3",
+      "seasonNumber": 3,
+      "posterPath": "/5MkZjRnCKiIGn3bkXrXfndEzqOU.jpg"
+    },
+    {
+      "id": 3628,
+      "airDate": "2014-04-06",
+      "episodeCount": 10,
+      "name": "Season 4",
+      "seasonNumber": 4,
+      "posterPath": "/jXIMScXE4J4EVHUba1JgxZnWbo4.jpg"
+    }
+  ],
+  "mediaInfo": {
+    "id": 586,
+    "mediaType": "tv",
+    "tmdbId": 1399,
+    "tvdbId": 121361,
+    "status": 4,
+    "status4k": 1,
+    "seasons": [
+      {
+        "id": 331,
+        "seasonNumber": 1,
+        "status": 5,
+        "status4k": 1
+      },
+      {
+        "id": 332,
+        "seasonNumber": 2,
+        "status": 2,
+        "status4k": 1
+      }
+    ]
+  }
+}

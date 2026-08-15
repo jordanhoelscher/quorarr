@@ -1,0 +1,322 @@
+/*
+ * "The Basin" — the design system
+ * ----------------------
+ * Design direction: the interface is graded like a stone basin of memories.
+ * Cold obsidian-blue stone, lit from within by a luminous silver-cyan vapour.
+ * Exactly one warm light exists in the room, and it is reserved for things
+ * about to be destroyed (deletion flags, vetoes, danger) — so warmth always
+ * means consequence.
+ *
+ * Type: Instrument Serif carries identity and view titles (high-contrast,
+ * editorial, faintly archival). IBM Plex Sans runs the UI. IBM Plex Mono owns
+ * every number and micro-label, so storage figures and countdowns line up in
+ * tabular columns and read as instrumentation rather than prose.
+ */
+
+/* ------------------------------------------------------------------ fonts */
+/*
+ * Self-hosted (Task 16 carry-forward, closed in Task 19): no runtime fetch to
+ * fonts.googleapis.com/fonts.gstatic.com, matching the "no third-party calls
+ * on the member-facing surface" posture. Files are the Latin-subset woff2s
+ * Google itself would have served for the weights app.css actually uses
+ * (see the removed <link> in index.html for the exact family/weight list).
+ * IBM Plex Sans ships as a single variable-font file (wght 100–700); the
+ * three faces below are named instances pulled from that one file, mirroring
+ * how Google's own CSS declares it.
+ */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/instrument-serif-latin-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-sans-latin-var.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-sans-latin-var.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-sans-latin-var.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-mono-latin-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-mono-latin-500.woff2') format('woff2');
+}
+
+/* ---------------------------------------------------------------- tokens */
+
+:root {
+  /* Stone — the basin, darkest at the page floor */
+  --ink: #05070b;
+  --ink-raised: #090e15;
+  --basin: #0e141d;
+  --basin-hi: #141c27;
+  --basin-top: #1a2431;
+
+  /* Edges are light bleeding over stone, never solid grey lines */
+  --edge: rgb(159 197 222 / 9%);
+  --edge-hi: rgb(159 197 222 / 16%);
+  --edge-glow: rgb(124 224 230 / 28%);
+
+  /* Vapour — text */
+  --vapor: #e9f1f8;
+  --rune: #9aabbf;
+  --rune-dim: #61728a;
+
+  /* Memory — the single cold accent */
+  --memory: #7ce0e6;
+  --memory-rgb: 124 224 230;
+  --memory-deep: #2b8593;
+  --memory-wash: rgb(124 224 230 / 8%);
+
+  /* Consequence — the only warm light in the room */
+  --ember: #f2a75f;
+  --rose: #f2708b;
+  --rose-rgb: 242 112 139;
+  --moss: #83d6a0;
+
+  /* Type */
+  --font-display: 'Instrument Serif', 'Noto Serif Display', Georgia, serif;
+  --font-ui: 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  --fs-micro: 0.6875rem; /* 11px — mono labels, always uppercase + tracked */
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-base: 0.9375rem;
+  --fs-md: 1.0625rem;
+  --fs-lg: 1.375rem;
+  --fs-xl: 2rem;
+  --fs-2xl: 3rem;
+  --fs-display: clamp(3.5rem, 18vw, 5.5rem);
+
+  /**
+   * 16px, and never smaller: the size of text a user can TYPE into.
+   *
+   * iOS Safari zooms the viewport whenever a focused text field computes to
+   * under 16px, and it does not zoom back out on blur — the page is simply
+   * left magnified and clipped at both edges until the user pinches out. It
+   * survives navigation, so one tap on a 15px search box leaves the whole app
+   * looking broken for the rest of the session (reported 2026-08-14; the
+   * measured magnification was 16/15 = 1.067, exactly the ratio).
+   *
+   * Every `input` (except checkbox/radio), `select` and `textarea` uses this.
+   * It is a browser threshold, not a design choice — going smaller to fit a
+   * compact control trades a real, sticky, whole-app layout bug for a few
+   * pixels.
+   */
+  --fs-field: 1rem;
+
+  /* Space — 4px base */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+  --sp-8: 4rem;
+
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-full: 999px;
+
+  --shadow-low: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-mid: 0 8px 28px -12px rgb(0 0 0 / 70%);
+  --shadow-lift: 0 20px 48px -20px rgb(0 0 0 / 85%);
+  --glow-memory: 0 0 24px -4px rgb(var(--memory-rgb) / 45%);
+
+  /* Motion — expo-out, so things arrive fast and settle slow */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 160ms;
+  --dur: 300ms;
+  --dur-slow: 600ms;
+
+  --shell-max: 62rem;
+  --tabbar-h: 4.25rem;
+
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------ foundation */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  font-family: var(--font-ui);
+  font-size: var(--fs-base);
+  line-height: 1.55;
+  color: var(--vapor);
+  background-color: var(--ink);
+  /* Atmosphere: two cold light sources sunk into the stone, never a flat fill. */
+  background-image:
+    radial-gradient(120% 80% at 82% -10%, rgb(var(--memory-rgb) / 11%), transparent 58%),
+    radial-gradient(90% 70% at 8% 108%, rgb(64 108 160 / 12%), transparent 62%),
+    linear-gradient(178deg, var(--ink-raised) 0%, var(--ink) 46%, #04060a 100%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+}
+
+/* Film grain — keeps large dark fields from banding and gives the stone tooth. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--memory);
+  outline-offset: 3px;
+  border-radius: var(--r-sm);
+}
+
+::selection {
+  background: rgb(var(--memory-rgb) / 30%);
+  color: var(--vapor);
+}
+
+/* --------------------------------------------------------------- helpers */
+
+/* Every number, unit, and micro-label in the app uses this. */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'zero' 1;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rune-dim);
+}
+
+/* The house surface: stone with a lit top edge. */
+.panel {
+  position: relative;
+  padding: var(--sp-5);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 3%), transparent 40%),
+    var(--basin);
+  box-shadow: var(--shadow-mid);
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 12% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--edge-glow), transparent);
+}
+
+/* ------------------------------------------------------------- animation */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes swirl {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

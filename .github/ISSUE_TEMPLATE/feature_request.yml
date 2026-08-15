@@ -1,0 +1,83 @@
+name: Feature request
+description: Suggest a change to how Quorarr works
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Quorarr is maintained by one person and stays deliberately narrow: it's about
+        running a shared Plex library *collectively* — requests, deletion by consent, and
+        quality tiers. Things that make it a better single-admin tool usually belong in
+        Maintainerr or the arrs.
+
+        Please read the Scope section of CONTRIBUTING.md first. Jellyfin/Emby support,
+        replacing Jellyseerr, rule-based automatic deletion, and multi-server are all
+        already-answered asks — comment on the existing issue rather than opening a new one.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you hitting?
+      description: >
+        Describe the situation, not the solution. "Nobody notices flags until they're about
+        to expire" is more useful than "add a weekly digest email".
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like it to do?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the app?
+      options:
+        - Discover / requests
+        - Deletion flags, vetoes, approvals
+        - Quality tiers (720p / 1080p / 4K)
+        - Library or storage views
+        - Pipeline / download board
+        - Access requests and membership
+        - Notifications (push / Discord)
+        - PWA, install, or offline behaviour
+        - Deployment, config, or docs
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: who
+    attributes:
+      label: Who benefits?
+      options:
+        - Members (the people you share with)
+        - The owner
+        - Both
+        - People deploying it
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What have you tried instead?
+      description: Existing settings, another tool, a manual workaround.
+
+  - type: textarea
+    id: stack
+    attributes:
+      label: Your stack (if relevant)
+      description: >
+        Plex / Jellyseerr / Radarr / Sonarr versions, deploy method, and reverse proxy —
+        helpful when the request touches an upstream integration.
+
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Would you be up for implementing it?
+      options:
+        - label: I'd be willing to open a PR if we agree on the approach first

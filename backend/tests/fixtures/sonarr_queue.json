@@ -1,0 +1,25 @@
+{
+  "page": 1,
+  "pageSize": 100,
+  "totalRecords": 2,
+  "records": [
+    {
+      "id": 6001,
+      "title": "The.Bear.S03E01.1080p.WEB-DL",
+      "size": 2147483648,
+      "sizeleft": 536870912,
+      "timeleft": "00:20:00",
+      "status": "downloading",
+      "series": {"tvdbId": 371980}
+    },
+    {
+      "id": 6002,
+      "title": "Doctor.Who.S14E00.Special",
+      "size": 0,
+      "sizeleft": 0,
+      "timeleft": "00:00:00",
+      "status": "queued",
+      "series": {"tvdbId": 78804}
+    }
+  ]
+}

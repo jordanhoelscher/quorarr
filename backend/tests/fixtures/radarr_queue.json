@@ -1,0 +1,29 @@
+{
+  "page": 1,
+  "pageSize": 100,
+  "totalRecords": 2,
+  "records": [
+    {
+      "id": 5001,
+      "title": "Dune.2021.2160p.WEB-DL",
+      "size": 21474836480,
+      "sizeleft": 5368709120,
+      "timeleft": "01:30:00",
+      "status": "downloading",
+      "movie": {
+        "tmdbId": 438631
+      }
+    },
+    {
+      "id": 5002,
+      "title": "Oppenheimer.2023.1080p.Bluray",
+      "size": 0,
+      "sizeleft": 0,
+      "timeleft": "00:00:00",
+      "status": "queued",
+      "movie": {
+        "tmdbId": 872585
+      }
+    }
+  ]
+}

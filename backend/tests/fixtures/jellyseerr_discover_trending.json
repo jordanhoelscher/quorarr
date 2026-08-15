@@ -1,0 +1,42 @@
+{
+  "page": 1,
+  "totalPages": 500,
+  "totalResults": 10000,
+  "results": [
+    {
+      "id": 108978,
+      "mediaType": "tv",
+      "name": "Reacher",
+      "firstAirDate": "2022-02-03",
+      "posterPath": "/f1VCQIG2iCyOookdgOzwtUpwWC0.jpg",
+      "overview": "Jack Reacher, a veteran military police investigator, has just recently entered civilian life. Reacher is a drifter, carrying no phone and the barest of essentials as he travels the country and explores the nation he once served.",
+      "voteAverage": 8.075
+    },
+    {
+      "id": 969681,
+      "mediaType": "movie",
+      "title": "Spider-Man: Brand New Day",
+      "releaseDate": "2026-07-29",
+      "posterPath": "/iPOn6DinuVyLY17YM9mKuPofV08.jpg",
+      "overview": "Fighting crime full-time as Spider-Man in a world that doesn't remember him\u2014and the pressure of seeing his old friends move on without him\u2014sparks a change in Peter Parker he may not have the power to control. But that transformation might also be the only thing that can stop a shocking new threat to the city and those he loves - a powerful villain no one can even see.",
+      "voteAverage": 7.87,
+      "mediaInfo": {
+        "id": 169,
+        "mediaType": "movie",
+        "tmdbId": 969681,
+        "tvdbId": 135896,
+        "status": 3,
+        "status4k": 1
+      }
+    },
+    {
+      "id": 1315772,
+      "mediaType": "movie",
+      "title": "Minions & Monsters",
+      "releaseDate": "2026-06-24",
+      "posterPath": "/nz7i42yhLIJ4ve9JKgM6NthoLHO.jpg",
+      "overview": "This is the rambunctious, ridiculous and totally true story of how the Minions conquered Hollywood, became movie stars, lost everything, unleashed monsters onto the world and then banded together to try and save the planet from the mayhem they had just created.",
+      "voteAverage": 7.277
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "page": 1,
+  "totalPages": 7,
+  "totalResults": 126,
+  "results": [
+    {
+      "id": 603,
+      "mediaType": "movie",
+      "title": "The Matrix",
+      "releaseDate": "1999-03-31",
+      "posterPath": "/dXNAPwY7VrqMAo51EKhhCJfaGb5.jpg",
+      "overview": "Set in the 22nd century, The Matrix tells the story of a computer hacker who joins a group of underground insurgents fighting the vast and powerful computers who now rule the earth.",
+      "voteAverage": 8.255,
+      "mediaInfo": {
+        "id": 290,
+        "mediaType": "movie",
+        "tmdbId": 603,
+        "tvdbId": null,
+        "status": 5,
+        "status4k": 1
+      }
+    },
+    {
+      "id": 711,
+      "mediaType": "tv",
+      "name": "Threat Matrix",
+      "firstAirDate": "2003-09-18",
+      "posterPath": "/xOeA42Rc9EiIe0dGnwywLqYKetG.jpg",
+      "overview": "Against the rising threat, the Homeland Security Agency has created a highly specialized, elite task force trained and equipped to counter anyone or anything that threatens our nation. The head of this super-secret team is Special Agent John Kilmer. He reports only to the President and has authority to call upon the technical skills, firepower and the specialist agents of the FBI, CIA and NSA.",
+      "voteAverage": 6.1
+    },
+    {
+      "id": 4381244,
+      "name": "Aurora Matrix",
+      "mediaType": "person",
+      "profilePath": "/l5ho43eQhxEEz7MEavjsieA7S1W.jpg"
+    }
+  ]
+}

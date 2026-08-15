@@ -1,0 +1,58 @@
+[
+  {
+    "id": 101,
+    "title": "Arrival",
+    "year": 2016,
+    "tmdbId": 329865,
+    "sizeOnDisk": 8589934592,
+    "qualityProfileId": 6,
+    "hasFile": true,
+    "added": "2024-01-15T12:00:00Z",
+    "images": [
+      {"coverType": "poster", "remoteUrl": "https://image.tmdb.org/t/p/original/poster-arrival.jpg"},
+      {"coverType": "fanart", "remoteUrl": "https://image.tmdb.org/t/p/original/fanart-arrival.jpg"}
+    ],
+    "movieFile": {
+      "quality": {
+        "quality": {
+          "name": "Bluray-1080p",
+          "resolution": 1080
+        }
+      }
+    }
+  },
+  {
+    "id": 102,
+    "title": "Dune",
+    "year": 2021,
+    "tmdbId": 438631,
+    "sizeOnDisk": 21474836480,
+    "qualityProfileId": 7,
+    "hasFile": true,
+    "added": "2024-03-02T08:30:00Z",
+    "images": [
+      {"coverType": "poster", "remoteUrl": "https://image.tmdb.org/t/p/original/poster-dune.jpg"}
+    ],
+    "movieFile": {
+      "quality": {
+        "quality": {
+          "name": "WEBDL-2160p",
+          "resolution": 2160
+        }
+      }
+    }
+  },
+  {
+    "id": 103,
+    "title": "Oppenheimer",
+    "year": 2023,
+    "tmdbId": 872585,
+    "sizeOnDisk": 0,
+    "qualityProfileId": 6,
+    "hasFile": false,
+    "added": "2024-07-19T20:00:00Z",
+    "images": [
+      {"coverType": "poster", "remoteUrl": "https://image.tmdb.org/t/p/original/poster-oppenheimer.jpg"}
+    ]
+  }
+]

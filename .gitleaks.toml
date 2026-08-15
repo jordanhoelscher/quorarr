@@ -1,0 +1,34 @@
+# gitleaks configuration for this repository.
+#
+# The default rule set is kept in full. What is added here are allowlists for
+# the placeholder credentials documentation has to contain in order to be
+# documentation. They match the *placeholder text*, not the file, so a real
+# key pasted into the same file is still caught.
+#
+# The one intentionally-valid secret in the tree is the throwaway VAPID test
+# keypair (backend/tests/conftest.py, frontend/src/lib/push.test.ts). It has
+# to be a real P-256 key for the push tests to sign a header, and it is
+# allowed inline with `gitleaks:allow` at each site.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Documentation placeholders (YOUR_TOKEN, replace-me, $VAR references)"
+targets = ["line"]
+regexes = [
+  '''YOUR_[A-Z_]+''',
+  '''replace-me[a-z0-9-]*''',
+  '''\$(RADARR|SONARR|JELLYSEERR)_API_KEY''',
+  '''machineIdentifier=''',
+]
+
+[[allowlists]]
+description = "Build artefacts and dependencies, if a scan is run on a dirty tree"
+paths = [
+  '''node_modules''',
+  '''frontend/dist''',
+  '''\.venv''',
+  '''egg-info''',
+  '''__pycache__''',
+]

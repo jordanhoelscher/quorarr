@@ -1,0 +1,20 @@
+[
+  {
+    "id": 3001,
+    "seasonNumber": 1,
+    "size": 671088640,
+    "quality": {"quality": {"name": "WEBDL-1080p", "resolution": 1080}}
+  },
+  {
+    "id": 3002,
+    "seasonNumber": 1,
+    "size": 671088640,
+    "quality": {"quality": {"name": "WEBDL-1080p", "resolution": 1080}}
+  },
+  {
+    "id": 3003,
+    "seasonNumber": 2,
+    "size": 536870912,
+    "quality": {"quality": {"name": "WEBDL-720p", "resolution": 720}}
+  }
+]

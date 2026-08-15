@@ -1,0 +1,26 @@
+{
+  "pageInfo": {
+    "pages": 1,
+    "pageSize": 100,
+    "results": 2,
+    "page": 1
+  },
+  "results": [
+    {
+      "id": 1,
+      "plexId": 111111,
+      "plexUsername": "owner",
+      "displayName": "Owner",
+      "email": "owner@example.com",
+      "userType": 1
+    },
+    {
+      "id": 4,
+      "plexId": 222222,
+      "plexUsername": "sam",
+      "displayName": "Sam",
+      "email": "sam@example.com",
+      "userType": 1
+    }
+  ]
+}

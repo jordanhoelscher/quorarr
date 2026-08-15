@@ -1,0 +1,18 @@
+# Build context hygiene: without this the daemon receives the virtualenv, the
+# node_modules tree, and a stale frontend/dist on every build.
+**/node_modules/
+**/dist/
+**/.venv/
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+**/*.egg-info/
+.git/
+.github/
+docs/
+tests/
+backend/tests/
+*.md
+.env
+*.env
+data/

@@ -1,0 +1,25 @@
+{
+  "name": "Quorarr",
+  "short_name": "Quorarr",
+  "description": "What's on the server, what's coming, and what's on its way out.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#05070b",
+  "theme_color": "#05070b",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "_comment": "Fallback only. In production the backend serves /manifest.json generated from APP_NAME (pensieve/main.py); this copy is what the Vite dev server answers with, since nothing is in front of it."
+}
