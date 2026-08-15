@@ -21,6 +21,11 @@ dev = ["pytest>=8", "pytest-asyncio>=0.24"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# The suite imports its own helpers as ``tests.conftest``, which needs this
+# directory importable. ``python -m pytest`` adds the working directory to
+# sys.path and a bare ``pytest`` does not -- so without this, the suite passed
+# locally and failed collection in CI, which is the worst possible split.
+pythonpath = ["."]
 
 [build-system]
 requires = ["setuptools>=68"]
