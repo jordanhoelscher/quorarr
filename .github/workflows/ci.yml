@@ -34,6 +34,13 @@ jobs:
       - name: Test
         run: pytest -q
 
+      # The Release workflow's notes extractor. Tested here because this is the
+      # job that already has pytest; without it the extractor would only ever
+      # run during a release, where its failure mode is an empty release page
+      # published after the tag and image are already out.
+      - name: Test release tooling
+        run: pytest ../.github -q
+
   frontend:
     name: Frontend (check, test, build)
     runs-on: ubuntu-latest

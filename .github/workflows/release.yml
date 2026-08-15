@@ -65,3 +65,39 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    # After the image, deliberately: a release page that announces a version
+    # whose image failed to build sends people to a `docker pull` that 404s.
+    needs: image
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # The changelog is the single source of the release notes -- there is no
+      # second copy to drift. No section for this tag fails the job rather than
+      # publishing an empty release page.
+      - name: Extract release notes
+        run: python3 .github/changelog-section.py CHANGELOG.md "${GITHUB_REF_NAME}" > "${RUNNER_TEMP}/notes.md"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # `--prerelease` mirrors the image job's `latest` rule: any tag with a
+        # `-` in it (v1.2.0-rc1) is not what a fresh install should land on.
+        #
+        # The test is an `if`, not `cond && flags+=(...)`: steps run under
+        # `bash -e`, where a bare test that is false is itself a failed command
+        # and would abort the step on every ordinary (non-prerelease) tag.
+        run: |
+          flags=()
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            flags+=(--prerelease)
+          fi
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file "${RUNNER_TEMP}/notes.md" \
+            "${flags[@]}"
