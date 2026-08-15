@@ -36,12 +36,18 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.IMAGE }}
+          # Every line of `tags` below is an input to the action, not YAML —
+          # a `#` inside that block scalar would be handed to metadata-action
+          # as a tag pattern, so explanations live out here.
+          #
+          # `latest` is skipped for any tag containing `-` (v1.2.0-rc1 and
+          # friends): a pre-release must not become what a fresh
+          # `docker compose pull` gets. The bare `{{major}}` tag is skipped
+          # for v0.x, where `:0` would promise a stability 0.x has not earned.
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
-            # `latest` only for a real release — a v1.2.0-rc1 tag must not
-            # become what a fresh `docker compose pull` gets.
             type=raw,value=latest,enable=${{ !contains(github.ref, '-') }}
           labels: |
             org.opencontainers.image.title=Quorarr
