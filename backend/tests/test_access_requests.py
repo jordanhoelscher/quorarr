@@ -244,8 +244,18 @@ def test_tampered_guest_cookie_is_401(tmp_path):
     client, settings, _router = _make_client(tmp_path, {})
     try:
         _guest(client, settings)
-        good = client.cookies.get(GUEST_COOKIE)
-        client.cookies.set(GUEST_COOKIE, good[:-1] + ("a" if good[-1] != "a" else "b"))
+        payload, dot, signed = client.cookies.get(GUEST_COOKIE).partition(".")
+
+        # Tamper the FIRST character of the payload, whose six bits are all
+        # significant. Changing the LAST character of any base64 segment is
+        # not a reliable tamper: 27 characters carry 162 bits but the HMAC is
+        # 160, so the final character's low two bits are spare and one swap in
+        # sixteen decodes to the very same signature. The cookie is then
+        # authentic, the server correctly answers 200, and the test fails ~6%
+        # of runs for no reason (measured 6.12% over 6000 signatures).
+        tampered = ("a" if payload[0] != "a" else "b") + payload[1:]
+        client.cookies.set(GUEST_COOKIE, tampered + dot + signed)
+
         assert client.post("/api/guest/access-requests").status_code == 401
     finally:
         client.__exit__(None, None, None)
