@@ -8,6 +8,7 @@
       "posterPath": "/uqx37cS8cpHg8U35f9U5IBlrCV3.jpg",
       "overview": "As U.S. troops storm the beaches of Normandy, three brothers lie dead on the battlefield, with a fourth trapped behind e",
       "voteAverage": 8.232,
+      "voteCount": 17614,
       "popularity": 31.926,
       "creditId": "52fe4283c3a36847f8024aef",
       "character": "Captain Miller",
@@ -28,9 +29,24 @@
       "posterPath": "/Cw4hIUIAmSYfK9QfaUW5igp9La.jpg",
       "overview": "A man with a low IQ has accomplished great things in his life and been present during significant historic events\u2014in eac",
       "voteAverage": 8.463,
+      "voteCount": 30232,
       "popularity": 29.3531,
       "creditId": "52fe420ec3a36847f800074f",
       "character": "Forrest Gump"
+    },
+    {
+      "id": 2224,
+      "mediaType": "tv",
+      "name": "The Daily Show",
+      "firstAirDate": "1996-07-22",
+      "posterPath": "/ixcfyK7it6FjRM36Te4OdblAq4X.jpg",
+      "overview": "The World's Fakest News Team tackle the biggest stories in news, politics and pop culture.",
+      "voteAverage": 6.389,
+      "voteCount": 651,
+      "popularity": 179.7723,
+      "creditId": "52572a6e760ee3776a2cb55a",
+      "character": "Self",
+      "episodeCount": 3
     },
     {
       "id": 862,
@@ -40,6 +56,7 @@
       "posterPath": "/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg",
       "overview": "Led by Woody, Andy's toys live happily in his room until Andy's birthday brings Buzz Lightyear onto the scene. Afraid of",
       "voteAverage": 7.985,
+      "voteCount": 20344,
       "popularity": 31.2043,
       "creditId": "52fe4284c3a36847f8024f95",
       "character": "Woody (voice)"
@@ -52,6 +69,7 @@
       "posterPath": "/vxERANdozlMKgl7VqGxbAvZ6u1O.jpg",
       "overview": "Former 1960s flower children Steven and Elyse Keaton raise their conservative son Alex, daughters Mallory and Jennifer, ",
       "voteAverage": 7.235,
+      "voteCount": 275,
       "popularity": 27.2978,
       "creditId": "52537b5819c295794018e220",
       "character": "Ned Donnelly",
@@ -65,6 +83,7 @@
       "posterPath": "/uqx37cS8cpHg8U35f9U5IBlrCV3.jpg",
       "overview": "As U.S. troops storm the beaches of Normandy, three brothers lie dead on the battlefield, with a fourth trapped behind e",
       "voteAverage": 8.232,
+      "voteCount": 17614,
       "popularity": 31.926,
       "creditId": "52fe4283c3a36847f8024af0",
       "character": "Captain Miller (voice)",
@@ -81,7 +100,8 @@
       "id": 999999,
       "mediaType": "person",
       "name": "Nobody",
-      "popularity": 500.0
+      "popularity": 500.0,
+      "voteCount": 999999
     }
   ],
   "crew": [
@@ -93,6 +113,7 @@
       "posterPath": "/blI1ioXbgJWOJ3PbcBuSV65Ebwu.jpg",
       "overview": "God contacts Junior Congressman Evan Baxter and tells him to build an ark in preparation for a great flood.",
       "voteAverage": 5.587,
+      "voteCount": 4630,
       "popularity": 7.753,
       "creditId": "52fe4365c3a36847f805145d",
       "job": "Executive Producer",

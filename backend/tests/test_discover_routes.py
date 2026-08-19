@@ -1159,7 +1159,8 @@ def test_person_200_returns_the_name_and_acting_credits(tmp_path):
         body = resp.json()
         assert body["name"] == "Tom Hanks"
         assert [item["title"] for item in body["items"]] == [
-            "Saving Private Ryan", "Toy Story", "Forrest Gump", "Family Ties",
+            "Forrest Gump", "Toy Story", "Saving Private Ryan",
+            "The Daily Show", "Family Ties",
         ]
         # Shaped exactly like every other Discover card, so the same tile and
         # the same detail sheet work without a second code path.

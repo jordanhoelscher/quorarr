@@ -177,16 +177,38 @@ async def test_person_credits_are_acting_only(tmp_path):
     assert CREDITS["crew"][0]["title"] not in {item["title"] for item in items}
 
 
-async def test_person_credits_sorted_by_popularity_not_upstream_order(tmp_path):
+async def test_person_credits_sorted_by_vote_count_not_upstream_order(tmp_path):
     http = make_http(lambda request: httpx.Response(200, json=CREDITS))
     items = await jellyseerr.person_credits(http, make_settings(tmp_path), 31)
 
     assert [item["title"] for item in items] == [
-        "Saving Private Ryan",  # 31.9
-        "Toy Story",            # 31.2
-        "Forrest Gump",         # 29.4
-        "Family Ties",          # 27.3
+        "Forrest Gump",         # 30,232 votes
+        "Toy Story",            # 20,344
+        "Saving Private Ryan",  # 17,614
+        "The Daily Show",       #    651
+        "Family Ties",          #    275
     ]
+
+
+async def test_person_credits_rank_films_above_trending_talk_shows(tmp_path):
+    """The 1.2.0 bug this fixture exists to pin.
+
+    TMDB\'s ``popularity`` is a rolling *trending* score, not a measure of how
+    significant a credit is, so a daily talk show someone guested on once
+    outscores everything they are actually known for -- by an order of
+    magnitude here (The Daily Show 179.8 against Forrest Gump\'s 29.4).
+    Sorting by it filled the filmography with chat-show appearances: only ten
+    of Tom Hanks\'s fifty rows were films. ``voteCount`` is how many people
+    cared enough to rate the thing, which does not decay, and it puts the
+    films back on top.
+    """
+    http = make_http(lambda request: httpx.Response(200, json=CREDITS))
+    titles = [item["title"] for item in await jellyseerr.person_credits(
+        http, make_settings(tmp_path), 31)]
+
+    talk_show = titles.index("The Daily Show")
+    for film in ("Forrest Gump", "Toy Story", "Saving Private Ryan"):
+        assert titles.index(film) < talk_show, f"{film} must outrank the talk show"
 
 
 async def test_person_credits_dedupes_a_title_credited_twice(tmp_path):
@@ -206,8 +228,8 @@ async def test_person_credits_keeps_a_movie_and_a_show_that_share_a_tmdb_id(tmp_
     """
     body = {
         "cast": [
-            {"id": 13, "mediaType": "movie", "title": "Film Thirteen", "popularity": 9},
-            {"id": 13, "mediaType": "tv", "name": "Show Thirteen", "popularity": 8},
+            {"id": 13, "mediaType": "movie", "title": "Film Thirteen", "voteCount": 9},
+            {"id": 13, "mediaType": "tv", "name": "Show Thirteen", "voteCount": 8},
         ],
         "crew": [],
         "id": 31,
@@ -229,8 +251,9 @@ async def test_person_credits_carries_availability_from_media_info(tmp_path):
 
 
 async def test_person_credits_drops_rows_that_are_not_requestable_titles(tmp_path):
-    """The fixture\'s planted person row has the highest popularity of the lot,
-    so a missing filter would put it first rather than nowhere."""
+    """The fixture\'s planted person row tops *both* orderings -- highest
+    popularity and highest vote count -- so a missing filter puts it first
+    rather than nowhere, whichever key the sort is using."""
     http = make_http(lambda request: httpx.Response(200, json=CREDITS))
     items = await jellyseerr.person_credits(http, make_settings(tmp_path), 31)
 
@@ -241,7 +264,7 @@ async def test_person_credits_drops_rows_that_are_not_requestable_titles(tmp_pat
 async def test_person_credits_caps_at_fifty(tmp_path):
     body = {
         "cast": [
-            {"id": i, "mediaType": "movie", "title": f"Film {i}", "popularity": i}
+            {"id": i, "mediaType": "movie", "title": f"Film {i}", "voteCount": i}
             for i in range(200)
         ],
         "crew": [],
@@ -255,11 +278,11 @@ async def test_person_credits_caps_at_fifty(tmp_path):
     assert items[0]["title"] == "Film 199"
 
 
-async def test_person_credits_tolerates_a_missing_popularity(tmp_path):
+async def test_person_credits_tolerates_a_missing_vote_count(tmp_path):
     body = {
         "cast": [
             {"id": 1, "mediaType": "movie", "title": "Unranked"},
-            {"id": 2, "mediaType": "movie", "title": "Ranked", "popularity": 5},
+            {"id": 2, "mediaType": "movie", "title": "Ranked", "voteCount": 5},
         ],
         "crew": [],
         "id": 31,
@@ -284,7 +307,7 @@ async def test_filmography_joins_the_name_to_the_credits(tmp_path):
 
     assert result["name"] == "Tom Hanks"
     assert result["profile_path"] == "/oFvZoKI6lvU03n4YoNGAll9rkas.jpg"
-    assert [item["title"] for item in result["items"]][0] == "Saving Private Ryan"
+    assert [item["title"] for item in result["items"]][0] == "Forrest Gump"
 
 
 async def test_filmography_raises_when_the_person_is_unknown(tmp_path):

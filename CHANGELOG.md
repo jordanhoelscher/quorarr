@@ -7,6 +7,28 @@ All notable changes to this project are documented here. The format is loosely
 Versions before 0.9.0 predate the public repository; they are summarised rather
 than itemised, since their history lives in a private monorepo.
 
+## [1.2.1] — 2026-08-18
+
+### Changed
+
+- **A filmography is ordered by vote count, not by TMDB "popularity".** The
+  1.2.0 ordering looked reasonable and was not: `popularity` is a rolling
+  *trending* score, so a daily talk show someone guested on once outscores
+  everything they are actually known for. It left ten of Tom Hanks's fifty
+  rows as films, led by The Simpsons and The Daily Show, with Forrest Gump far
+  down the grid; Scarlett Johansson's page opened on three chat shows.
+  `voteCount` — how many people cared enough to rate the title, which does not
+  decay — puts the work back on top: the same fifty become 48 films led by
+  Forrest Gump, Toy Story and The Green Mile. The acting-only filter and the
+  fifty-credit cap are unchanged.
+
+### Fixed
+
+- `frontend/package-lock.json` carried the pre-rename `pensieve-frontend` and a
+  version stuck at `0.1.0`, so the one file that pins the build disagreed with
+  `package.json` about what it was building. Regenerated; no dependency
+  changed.
+
 ## [1.2.0] — 2026-08-18
 
 ### Added

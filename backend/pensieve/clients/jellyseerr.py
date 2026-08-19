@@ -569,10 +569,19 @@ async def person_credits(
 
     Three things happen to that array, in order:
 
-    * **Sorted by popularity**, which upstream does not do -- it returns
+    * **Sorted by vote count**, which upstream does not do -- it returns
       credits in TMDB's own order, which is neither chronological nor useful.
       Sorting before the cut is what makes the cut keep the top rather than an
       arbitrary slice.
+
+      Vote count rather than ``popularity``, which is what 1.2.0 shipped and
+      got wrong. TMDB's ``popularity`` is a rolling *trending* score, so a
+      daily talk show someone guested on once buries everything they are known
+      for: it left only ten of Tom Hanks's fifty rows as films, topped by The
+      Simpsons and The Daily Show, with Forrest Gump far down the grid.
+      ``voteCount`` is how many people cared enough to rate the title, which
+      does not decay -- the same fifty become 48 films led by Forrest Gump,
+      Toy Story and The Green Mile.
     * **De-duplicated**, on ``(media_type, tmdb_id)`` rather than the bare id.
       TMDB emits one row per *credit*, so a second role in the same film is a
       second row; and its id space is per media type, so film 13 and show 13
@@ -602,7 +611,7 @@ async def person_credits(
 
     ranked = sorted(
         raw.get("cast") or [],
-        key=lambda credit: credit.get("popularity") or 0,
+        key=lambda credit: credit.get("voteCount") or 0,
         reverse=True,
     )
 
