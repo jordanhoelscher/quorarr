@@ -12,8 +12,11 @@
     src: string | null;
     /** Empty for decorative use next to a visible title. */
     alt?: string;
-    /** Row thumbs, the detail overlay's header, or a Discover shelf tile. */
-    size?: 'row' | 'lead' | 'tile';
+    /**
+     * Row thumbs, the detail overlay's header, a Discover shelf tile, or the
+     * round headshot a person wears in the search dropdown.
+     */
+    size?: 'row' | 'lead' | 'tile' | 'face';
   }
 
   const { src, alt = '', size = 'row' }: Props = $props();
@@ -26,6 +29,7 @@
     class="poster"
     class:lead={size === 'lead'}
     class:tile={size === 'tile'}
+    class:face={size === 'face'}
     {src}
     {alt}
     loading="lazy"
@@ -38,6 +42,7 @@
     class="poster empty"
     class:lead={size === 'lead'}
     class:tile={size === 'tile'}
+    class:face={size === 'face'}
     aria-hidden="true"
   ></span>
 {/if}
@@ -69,6 +74,17 @@
     height: auto;
     aspect-ratio: 2 / 3;
     border-radius: var(--r-md);
+  }
+
+  /*
+   * A person, not a poster: square and round, so a dropdown row reads as
+   * "who" at a glance rather than as a title whose artwork failed to load.
+   */
+  .poster.face {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--r-full);
+    object-position: top center;
   }
 
   /* Carved stone: a lit top edge over a darker face, same as .panel. */

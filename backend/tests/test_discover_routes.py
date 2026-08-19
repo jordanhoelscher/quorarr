@@ -20,6 +20,8 @@ SEARCH = json.loads((FIXTURES / "jellyseerr_search.json").read_text())
 MOVIE_DETAIL = json.loads((FIXTURES / "jellyseerr_movie_detail.json").read_text())
 TV_DETAIL = json.loads((FIXTURES / "jellyseerr_tv_detail.json").read_text())
 USERS = json.loads((FIXTURES / "jellyseerr_users.json").read_text())
+PERSON = json.loads((FIXTURES / "jellyseerr_person.json").read_text())
+CREDITS = json.loads((FIXTURES / "jellyseerr_person_credits.json").read_text())
 
 #: The seeded session user's Plex account id, matching the users fixture's
 #: second row (jellyseerr user 4).
@@ -86,6 +88,8 @@ _BROWSE_ROUTES = {
     ("GET", "/api/v1/tv/1399"): httpx.Response(200, json=TV_DETAIL),
     ("GET", "/api/v1/user"): httpx.Response(200, json=USERS),
     ("POST", "/api/v1/request"): httpx.Response(201, json={"id": 88, "status": 1}),
+    ("GET", "/api/v1/person/31"): httpx.Response(200, json=PERSON),
+    ("GET", "/api/v1/person/31/combined_credits"): httpx.Response(200, json=CREDITS),
 }
 
 
@@ -98,6 +102,8 @@ _BROWSE_ROUTES = {
         ("GET", "/api/discover/shelves"),
         ("GET", "/api/discover/search?q=matrix"),
         ("GET", "/api/discover/detail/movie/550"),
+        ("GET", "/api/discover/suggest?q=matrix"),
+        ("GET", "/api/discover/person/31"),
         ("POST", "/api/discover/request"),
     ],
 )
@@ -1047,5 +1053,228 @@ def test_request_records_a_poster_hint_alongside_the_title(tmp_path):
             conn.close()
         assert hint["title"] == "Fight Club"
         assert hint["poster"] == "/jSziioSwPVrOy9Yow3XhWIBDjq1.jpg"
+    finally:
+        client.__exit__(None, None, None)
+
+
+# --- suggest -----------------------------------------------------------------
+
+
+def test_suggest_200_keeps_people_the_grid_drops(tmp_path):
+    """The whole point of the second route: /search cannot answer "who".
+
+    The person row is upstream\'s third result and stays third -- the dropdown
+    is a relevance list, and re-ranking it here would put "Aurora Matrix"
+    above "The Matrix".
+    """
+    client, settings, _router = _make_client(tmp_path, _BROWSE_ROUTES)
+    try:
+        _login(client, settings)
+        resp = client.get("/api/discover/suggest", params={"q": "matrix"})
+        assert resp.status_code == 200
+
+        items = resp.json()["items"]
+        assert [row["media_type"] for row in items] == ["movie", "tv", "person"]
+        assert items[2] == {
+            "person_id": 4381244,
+            "name": "Aurora Matrix",
+            "profile_path": "/l5ho43eQhxEEz7MEavjsieA7S1W.jpg",
+            "media_type": "person",
+        }
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_suggest_takes_at_most_eight(tmp_path):
+    """A dropdown, not a results page: the bound is the route\'s, not the UI\'s."""
+    many = {"results": [dict(SEARCH["results"][0], id=i) for i in range(40)]}
+    routes = {**_BROWSE_ROUTES, ("GET", "/api/v1/search"): httpx.Response(200, json=many)}
+    client, settings, _router = _make_client(tmp_path, routes)
+    try:
+        _login(client, settings)
+        assert len(client.get("/api/discover/suggest", params={"q": "a"}).json()["items"]) == 8
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_suggest_does_not_change_what_the_results_grid_gets(tmp_path):
+    """/search stays title-only. Both routes read the same upstream body, and
+    a person leaking into the grid would render as an unrequestable card."""
+    client, settings, _router = _make_client(tmp_path, _BROWSE_ROUTES)
+    try:
+        _login(client, settings)
+        client.get("/api/discover/suggest", params={"q": "matrix"})
+        items = client.get("/api/discover/search", params={"q": "matrix"}).json()["items"]
+        assert [row["title"] for row in items] == ["The Matrix", "Threat Matrix"]
+        assert all(row["media_type"] in ("movie", "tv") for row in items)
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_suggest_and_search_cost_one_upstream_call_between_them(tmp_path):
+    """Typing fires both routes; Jellyseerr should only hear about it once."""
+    client, settings, router = _make_client(tmp_path, _BROWSE_ROUTES)
+    try:
+        _login(client, settings)
+        client.get("/api/discover/suggest", params={"q": "matrix"})
+        client.get("/api/discover/search", params={"q": "matrix"})
+        sent = [r for r in router.requests if r.url.path == "/api/v1/search"]
+        assert len(sent) == 1
+    finally:
+        client.__exit__(None, None, None)
+
+
+@pytest.mark.parametrize("q", ["", "x" * 101])
+def test_suggest_422_on_an_out_of_bounds_query(tmp_path, q):
+    """Same bound as /search: this is a client string reaching an upstream call."""
+    client, settings, _router = _make_client(tmp_path, _BROWSE_ROUTES)
+    try:
+        _login(client, settings)
+        assert client.get("/api/discover/suggest", params={"q": q}).status_code == 422
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_suggest_502_when_jellyseerr_is_down(tmp_path):
+    client, settings, _router = _make_client(tmp_path, {})
+    try:
+        _login(client, settings)
+        resp = client.get("/api/discover/suggest", params={"q": "matrix"})
+        assert resp.status_code == 502
+        assert resp.json() == {"error": "jellyseerr unreachable"}
+    finally:
+        client.__exit__(None, None, None)
+
+
+# --- person ------------------------------------------------------------------
+
+
+def test_person_200_returns_the_name_and_acting_credits(tmp_path):
+    client, settings, _router = _make_client(tmp_path, _BROWSE_ROUTES)
+    try:
+        _login(client, settings)
+        resp = client.get("/api/discover/person/31")
+        assert resp.status_code == 200
+
+        body = resp.json()
+        assert body["name"] == "Tom Hanks"
+        assert [item["title"] for item in body["items"]] == [
+            "Saving Private Ryan", "Toy Story", "Forrest Gump", "Family Ties",
+        ]
+        # Shaped exactly like every other Discover card, so the same tile and
+        # the same detail sheet work without a second code path.
+        assert set(body["items"][0]) == {
+            "tmdb_id", "title", "year", "media_type", "poster_path",
+            "overview", "rating", "status", "availability",
+        }
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_person_credits_are_requestable_through_the_normal_sheet(tmp_path):
+    """A filmography tile has to reach the same request lane as a search tile."""
+    client, settings, _router = _make_client(tmp_path, _BROWSE_ROUTES)
+    try:
+        _login(client, settings)
+        body = client.get("/api/discover/person/31").json()
+        by_title = {item["title"]: item for item in body["items"]}
+        assert by_title["Saving Private Ryan"]["availability"] == "available"
+        assert by_title["Forrest Gump"]["availability"] == "requestable"
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_person_404_when_jellyseerr_has_no_such_person(tmp_path):
+    """Distinct from a 502, same as the title detail route: "no such actor" and
+    "the service is down" are different things to tell someone.
+
+    Note this branch is unreachable against Jellyseerr 2.x as deployed: it
+    answers an unknown person id with a **500** (``{"message": "Unable to
+    retrieve person."}``), not a 404 -- verified live 2026-08-18 -- so in
+    practice an unknown id takes the 502 path below. The mapping is kept
+    because it is the correct one the day upstream sends the right status,
+    and because deliberately reading a 500 as "no such person" would make a
+    genuine Jellyseerr fault read as an empty actor.
+    """
+    routes = {
+        **_BROWSE_ROUTES,
+        ("GET", "/api/v1/person/99"): httpx.Response(404, json={"message": "Not found"}),
+        ("GET", "/api/v1/person/99/combined_credits"): httpx.Response(
+            200, json={"cast": [], "crew": [], "id": 99}
+        ),
+    }
+    client, settings, _router = _make_client(tmp_path, routes)
+    try:
+        _login(client, settings)
+        resp = client.get("/api/discover/person/99")
+        assert resp.status_code == 404
+        assert resp.json() == {"error": "not found"}
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_person_502_when_jellyseerr_is_down(tmp_path):
+    """An outage is a 5xx, and here it has to be spelled out: the empty-router
+    trick the other outage tests use answers 404, which this route reads --
+    correctly -- as "no such person"."""
+    routes = {
+        ("GET", "/api/v1/person/31"): httpx.Response(503),
+        ("GET", "/api/v1/person/31/combined_credits"): httpx.Response(503),
+    }
+    client, settings, _router = _make_client(tmp_path, routes)
+    try:
+        _login(client, settings)
+        resp = client.get("/api/discover/person/31")
+        assert resp.status_code == 502
+        assert resp.json() == {"error": "jellyseerr unreachable"}
+    finally:
+        client.__exit__(None, None, None)
+
+
+@pytest.mark.parametrize("person_id", ["0", "-1", "abc"])
+def test_person_422_on_an_unusable_id(tmp_path, person_id):
+    """Bounded before it reaches an upstream path segment."""
+    client, settings, router = _make_client(tmp_path, _BROWSE_ROUTES)
+    try:
+        _login(client, settings)
+        assert client.get(f"/api/discover/person/{person_id}").status_code == 422
+        assert not [r for r in router.requests if "person" in r.url.path]
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_a_two_word_search_reaches_jellyseerr_url_encoded(tmp_path):
+    """The 1.1.0 bug, end to end: this answered 502 for every multi-word query."""
+    client, settings, router = _make_client(tmp_path, _BROWSE_ROUTES)
+    try:
+        _login(client, settings)
+        assert client.get("/api/discover/search", params={"q": "tom hanks"}).status_code == 200
+        sent = [r for r in router.requests if r.url.path == "/api/v1/search"]
+        assert "query=tom%20hanks" in str(sent[0].url)
+        assert sent[0].url.params["query"] == "tom hanks"
+    finally:
+        client.__exit__(None, None, None)
+
+
+def test_person_502_on_the_500_jellyseerr_actually_sends_for_an_unknown_id(tmp_path):
+    """What an unknown person id really does, as opposed to what it should.
+
+    A person id only ever reaches this route from a suggestion row the backend
+    itself produced, so this is a hand-typed-URL path rather than one a friend
+    can stumble into.
+    """
+    routes = {
+        ("GET", "/api/v1/person/99"): httpx.Response(
+            500, json={"message": "Unable to retrieve person."}
+        ),
+        ("GET", "/api/v1/person/99/combined_credits"): httpx.Response(500),
+    }
+    client, settings, _router = _make_client(tmp_path, routes)
+    try:
+        _login(client, settings)
+        resp = client.get("/api/discover/person/99")
+        assert resp.status_code == 502
+        # Never the upstream's own text: that is Jellyseerr's internals.
+        assert resp.json() == {"error": "jellyseerr unreachable"}
     finally:
         client.__exit__(None, None, None)

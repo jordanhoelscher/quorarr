@@ -348,6 +348,37 @@ export interface DiscoverResults {
 }
 
 /**
+ * A person row from `GET /api/discover/suggest`.
+ *
+ * Shares no id field with `DiscoverCard` on purpose: `person_id` and `tmdb_id`
+ * address different endpoints, so a row carrying the wrong one would fail as a
+ * confusing 404 rather than as a type error. `media_type` is the discriminant.
+ */
+export interface PersonSuggestion {
+  person_id: number;
+  name: string;
+  /** TMDB-relative headshot path; run it through `posterUrl` before use. */
+  profile_path: string | null;
+  media_type: 'person';
+}
+
+/** One row of the search dropdown: something to watch, or someone who was in it. */
+export type Suggestion = DiscoverCard | PersonSuggestion;
+
+export interface DiscoverSuggestions {
+  items: Suggestion[];
+}
+
+/** The answer to `GET /api/discover/person/{person_id}`. */
+export interface PersonFilmography {
+  person_id: number;
+  name: string;
+  profile_path: string | null;
+  /** Acting credits only, most popular first, capped server-side at 50. */
+  items: DiscoverCard[];
+}
+
+/**
  * The answer to `POST /api/discover/request`.
  *
  * `state` is only present on the 202 a friend gets when they ask for 4K:

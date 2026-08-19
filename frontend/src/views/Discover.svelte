@@ -10,23 +10,38 @@
    * Typing is debounced and versioned: a slow response for "mat" must never
    * overwrite the results for "matrix", which is the classic search bug and
    * looks exactly like the backend returning nonsense.
+   *
+   * One debounce drives two reads. `/search` fills the grid, exactly as it
+   * always has; `/suggest` fills the dropdown, and is the only one of the two
+   * that can answer "who" — a person is not something to request, so the grid
+   * has never been able to show one. Both land on the same upstream call and
+   * the same server-side cache entry, so the second costs nothing there.
+   *
+   * A failed suggestion is silent. The dropdown is a shortcut; the grid
+   * underneath it is already carrying the error, and a second error box for a
+   * convenience feature is noise.
    */
   import { onMount } from 'svelte';
   import { unreachable } from '../lib/branding.svelte';
 
   import Placeholder from '../lib/Placeholder.svelte';
   import MediaTile from '../lib/MediaTile.svelte';
+  import Suggestions from '../lib/Suggestions.svelte';
   import ViewHead from '../lib/ViewHead.svelte';
   import { ApiError, api } from '../lib/api';
+  import { isPerson, moveActive } from '../lib/suggest';
   import type {
     BrowseFilters,
     DiscoverCard,
     DiscoverResults,
     DiscoverShelf,
     DiscoverShelves,
+    DiscoverSuggestions,
+    Suggestion,
   } from '../lib/types';
   import Browse from './Browse.svelte';
   import DiscoverDetail from './DiscoverDetail.svelte';
+  import Person from './Person.svelte';
 
   /** Long enough that a fast typist makes one call, short enough to feel live. */
   const DEBOUNCE_MS = 300;
@@ -43,6 +58,16 @@
   let searchError = $state<string | null>(null);
 
   let selected = $state<DiscoverCard | null>(null);
+
+  let suggestions = $state<Suggestion[]>([]);
+  let suggestOpen = $state(false);
+  /** Keyboard highlight; -1 means none, so Enter submits the typed query. */
+  let active = $state(-1);
+  /** The actor whose filmography is open, seeded from the row that opened it. */
+  let person = $state<{ id: number; name: string } | null>(null);
+
+  const optionId = (index: number): string => `discover-suggestion-${index}`;
+  const showing = $derived(suggestOpen && suggestions.length > 0);
 
   let browsing = $state<Partial<BrowseFilters> | null>(null);
   /**
@@ -107,6 +132,28 @@
     }
   };
 
+  const runSuggest = async (needle: string): Promise<void> => {
+    const mine = version;
+    try {
+      const found = await api.get<DiscoverSuggestions>(
+        `/api/discover/suggest?q=${encodeURIComponent(needle)}`,
+      );
+      if (mine !== version) return;
+      suggestions = found.items;
+      active = -1;
+      suggestOpen = true;
+    } catch {
+      // Silent by design — see the module comment. The grid reports the fault.
+      if (mine !== version) return;
+      closeSuggestions();
+    }
+  };
+
+  const closeSuggestions = (): void => {
+    suggestOpen = false;
+    active = -1;
+  };
+
   const onInput = (event: Event & { currentTarget: HTMLInputElement }): void => {
     query = event.currentTarget.value;
     clearTimeout(timer);
@@ -120,12 +167,69 @@
       results = null;
       searching = false;
       searchError = null;
+      suggestions = [];
+      closeSuggestions();
       return;
     }
 
     submitted = needle;
     searching = true;
-    timer = setTimeout(() => void runSearch(needle), DEBOUNCE_MS);
+    timer = setTimeout(() => {
+      void runSearch(needle);
+      void runSuggest(needle);
+    }, DEBOUNCE_MS);
+  };
+
+  /**
+   * Open a suggestion.
+   *
+   * A title goes to the detail sheet it would have reached from the grid; a
+   * person goes to their filmography. Either way the list closes first — it
+   * is answering a question that has just been answered.
+   */
+  const pick = (row: Suggestion): void => {
+    closeSuggestions();
+    if (isPerson(row)) {
+      person = { id: row.person_id, name: row.name };
+    } else {
+      selected = row;
+    }
+  };
+
+  /**
+   * The combobox keyboard contract.
+   *
+   * Enter with nothing highlighted deliberately does *not* pick the first row:
+   * someone who typed a full title and pressed Enter meant their own words,
+   * not the dropdown's opening guess. It closes the list and leaves the grid
+   * — already loading from the same keystroke — to answer.
+   */
+  const onKeydown = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') {
+      closeSuggestions();
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      if (showing && active >= 0) {
+        event.preventDefault();
+        pick(suggestions[active]);
+      } else {
+        closeSuggestions();
+      }
+      return;
+    }
+
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    if (suggestions.length === 0) return;
+
+    // Otherwise the caret jumps to either end of the field under the list.
+    event.preventDefault();
+    if (!suggestOpen) {
+      suggestOpen = true;
+      active = -1;
+    }
+    active = moveActive(active, event.key === 'ArrowDown' ? 1 : -1, suggestions.length);
   };
 
   const clear = (): void => {
@@ -136,6 +240,8 @@
     results = null;
     searching = false;
     searchError = null;
+    suggestions = [];
+    closeSuggestions();
   };
 
   /**
@@ -157,7 +263,15 @@
   };
 </script>
 
-{#if browsing}
+{#if person}
+  <Person
+    personId={person.id}
+    seedName={person.name}
+    requested={justRequested}
+    onback={() => (person = null)}
+    onselect={(c) => (selected = c)}
+  />
+{:else if browsing}
   <Browse
     start={browsing}
     requested={justRequested}
@@ -176,15 +290,33 @@
       <input
         class="finder-input"
         type="search"
-        placeholder="Search films and shows"
-        aria-label="Search films and shows"
+        placeholder="Search films, shows and actors"
+        aria-label="Search films, shows and actors"
         autocomplete="off"
+        role="combobox"
+        aria-expanded={showing}
+        aria-controls="discover-suggestions"
+        aria-autocomplete="list"
+        aria-activedescendant={showing && active >= 0 ? optionId(active) : undefined}
         value={query}
         oninput={onInput}
+        onkeydown={onKeydown}
+        onblur={closeSuggestions}
+        onfocus={() => (suggestions.length > 0 ? (suggestOpen = true) : undefined)}
       />
 
       {#if query}
         <button class="finder-clear" aria-label="Clear search" onclick={clear}>×</button>
+      {/if}
+
+      {#if showing}
+        <Suggestions
+          rows={suggestions}
+          {active}
+          {optionId}
+          onpick={pick}
+          onhover={(index) => (active = index)}
+        />
       {/if}
     </div>
 

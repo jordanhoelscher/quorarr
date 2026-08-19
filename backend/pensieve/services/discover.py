@@ -133,6 +133,47 @@ async def shelves(http: CachedHTTP, settings: Settings, ttl: float = 900) -> lis
     return built
 
 
+async def filmography(
+    http: CachedHTTP, settings: Settings, person_id: int, ttl: float = 600
+) -> dict[str, Any]:
+    """One actor's page: who they are, and what they have acted in.
+
+    Two upstream calls because Jellyseerr splits them --
+    ``/person/{id}/combined_credits`` carries no name, and ``/person/{id}``
+    carries no credits -- fetched concurrently since neither depends on the
+    other.
+
+    Unlike ``shelves``, a failure here is not survivable and is not swallowed:
+    an unknown person id 404s on the detail call while the credits call
+    happily answers with an empty ``cast``, so tolerating the failure would
+    render "no films" for a typo'd id instead of a not-found.
+
+    Args:
+        http: Shared cached HTTP client.
+        settings: App settings.
+        person_id: TMDB person id.
+        ttl: Cache freshness window in seconds, for both calls.
+
+    Returns:
+        ``{"person_id", "name", "profile_path", "items": [...]}``, where each
+        item is an ordinary Discover card.
+
+    Raises:
+        UpstreamError: If either call fails. A 404 from the detail call is
+            what "no such person" looks like.
+    """
+    who, credits = await asyncio.gather(
+        jellyseerr.person(http, settings, person_id, ttl=ttl),
+        jellyseerr.person_credits(http, settings, person_id, ttl=ttl),
+    )
+    return {
+        "person_id": who["person_id"],
+        "name": who["name"],
+        "profile_path": who["profile_path"],
+        "items": credits,
+    }
+
+
 def profile_for(settings: Settings, media_type: str, quality: str) -> int | None:
     """The arr quality profile a Discover request should be filed against.
 

@@ -13,11 +13,15 @@ the only place that talks to Jellyseerr:
   every status read here is the standard-quality one (``status``, never
   ``status4k``). 4K stays the owner's manual valve.
 * **People are not media.** ``GET /search`` mixes ``mediaType: "person"`` rows
-  into its results; they carry no tmdbId anyone can request, so they are
-  dropped during shaping instead of reaching the UI as unclickable cards.
+  into its results; they carry no tmdbId anyone can request, so ``shape_media``
+  drops them instead of letting them reach a grid as unclickable cards. Since
+  1.2.0 they are not thrown away, only kept apart: ``shape_person`` gives them
+  their own shape, and the search dropdown renders that shape as a route to a
+  filmography rather than as something to request.
 """
 
 from typing import Any
+from urllib.parse import quote
 
 from pensieve.clients.base import CachedHTTP
 from pensieve.config import Settings
@@ -176,6 +180,104 @@ def shape_results(raw: dict[str, Any]) -> list[dict[str, Any]]:
     return [row for row in shaped if row is not None]
 
 
+def shape_person(item: dict[str, Any]) -> dict[str, Any] | None:
+    """Shape one ``mediaType: "person"`` row into a suggestion row.
+
+    Deliberately shares no field names with ``shape_media`` beyond
+    ``media_type``: a person has a ``person_id``, not a ``tmdb_id``, because
+    the two ids address different endpoints and a row that carried the wrong
+    one would fail as a confusing 404 rather than as a type error. The
+    frontend discriminates on ``media_type == "person"``.
+
+    Args:
+        item: A raw row from ``/search``.
+
+    Returns:
+        ``{"person_id", "name", "profile_path", "media_type"}``, or None for
+        anything that is not a usable person -- a title row, or a person with
+        no id or no name to render.
+    """
+    if item.get("mediaType") != "person":
+        return None
+
+    person_id = item.get("id")
+    name = item.get("name")
+    if not isinstance(person_id, int) or not name:
+        return None
+
+    return {
+        "person_id": person_id,
+        "name": name,
+        # TMDB-relative, exactly like ``poster_path``; the frontend picks a size.
+        "profile_path": item.get("profilePath"),
+        "media_type": "person",
+    }
+
+
+def shape_suggestions(raw: dict[str, Any], limit: int = 8) -> list[dict[str, Any]]:
+    """Shape a ``/search`` body into a short mixed list of titles and people.
+
+    Upstream relevance order is preserved rather than grouped by kind. Sorting
+    people to the top would answer *matrix* with the actor "Aurora Matrix"
+    above the film, which is exactly backwards; upstream already ranks the
+    person first for *tom hanks*, which is exactly right.
+
+    Args:
+        raw: Raw body from ``/search``.
+        limit: How many rows the dropdown gets. Counted after shaping, so an
+            unusable row costs nothing rather than one of the slots.
+
+    Returns:
+        Up to ``limit`` rows, each either a ``shape_media`` card or a
+        ``shape_person`` row.
+    """
+    rows: list[dict[str, Any]] = []
+    for item in raw.get("results") or []:
+        shaped = (
+            shape_person(item)
+            if item.get("mediaType") == "person"
+            else shape_media(item)
+        )
+        if shaped is None:
+            continue
+        rows.append(shaped)
+        if len(rows) >= limit:
+            break
+    return rows
+
+
+async def _search_body(
+    http: CachedHTTP, settings: Settings, query: str, ttl: float
+) -> dict[str, Any]:
+    """GET Jellyseerr's combined index, unshaped.
+
+    Both ``search`` and ``suggest`` come through here so they build a
+    byte-identical request and therefore share one ``CachedHTTP`` entry. The
+    frontend fires both routes for the same keystroke -- the dropdown and the
+    results grid -- and this is what keeps that one upstream call rather than
+    two.
+
+    The query is percent-encoded into the URL rather than passed as a
+    ``params`` entry, and that is not a style choice. httpx *form*-encodes a
+    params mapping, so a space leaves as ``+``; Jellyseerr rejects that with
+    400 *"Parameter \'query\' must be url encoded. Its value may not contain
+    reserved characters."*, which this app then reports as "jellyseerr
+    unreachable". Every multi-word search failed that way until 1.2.0.
+    ``safe=""`` also encodes ``&`` and ``=``, so a title containing one cannot
+    open a second query parameter.
+
+    ``page`` rides in the URL too: httpx *replaces* a URL's query string with
+    the params mapping rather than merging into it, so passing one here would
+    silently drop the query that was just encoded.
+    """
+    return await http.get_json(
+        f"{_base(settings)}/search?page=1&query={quote(query, safe='')}",
+        service="jellyseerr",
+        headers=_headers(settings),
+        ttl=ttl,
+    )
+
+
 async def _browse(
     http: CachedHTTP, settings: Settings, path: str, ttl: float, **params: Any
 ) -> list[dict[str, Any]]:
@@ -207,7 +309,32 @@ async def search(
     Raises:
         UpstreamError: On a connect/transport error or non-2xx response.
     """
-    return await _browse(http, settings, "/search", ttl, query=query)
+    return shape_results(await _search_body(http, settings, query, ttl))
+
+
+async def suggest(
+    http: CachedHTTP, settings: Settings, query: str, ttl: float = 60, limit: int = 8
+) -> list[dict[str, Any]]:
+    """The same search, shaped for the type-ahead dropdown.
+
+    Differs from ``search`` in two ways and no others: people are kept (as
+    ``shape_person`` rows), and the list is cut to ``limit``. Same upstream
+    call, same cache entry -- see ``_search_body``.
+
+    Args:
+        http: Shared cached HTTP client.
+        settings: App settings.
+        query: The user's raw search string (bounded by the caller).
+        ttl: Cache freshness window in seconds.
+        limit: How many rows to return.
+
+    Returns:
+        Up to ``limit`` mixed title/person rows. See ``shape_suggestions``.
+
+    Raises:
+        UpstreamError: On a connect/transport error or non-2xx response.
+    """
+    return shape_suggestions(await _search_body(http, settings, query, ttl), limit)
 
 
 async def discover_trending(
@@ -388,6 +515,111 @@ async def media_detail(
     card["runtime"] = raw.get("runtime")
     card["seasons"] = _shape_seasons(raw) if media_type == "tv" else None
     return card
+
+
+#: How many acting credits a filmography shows. A prolific character actor has
+#: several hundred, most of them a single scene in something nobody is looking
+#: for; the top fifty by popularity is the part anyone scrolls.
+_MAX_CREDITS = 50
+
+
+async def person(
+    http: CachedHTTP, settings: Settings, person_id: int, ttl: float = 600
+) -> dict[str, Any]:
+    """One person's name and headshot.
+
+    A separate call from the credits because ``/combined_credits`` answers
+    with ``{"cast", "crew", "id"}`` and no name at all -- there is nothing to
+    title the filmography page with otherwise.
+
+    Args:
+        http: Shared cached HTTP client.
+        settings: App settings.
+        person_id: TMDB person id, as carried on a suggestion row.
+        ttl: Cache freshness window in seconds.
+
+    Returns:
+        A ``shape_person`` row.
+
+    Raises:
+        UpstreamError: On a connect/transport error or non-2xx response --
+            including the 404 that means there is no such person.
+    """
+    raw = await http.get_json(
+        f"{_base(settings)}/person/{person_id}",
+        service="jellyseerr",
+        headers=_headers(settings),
+        ttl=ttl,
+    )
+    # The endpoint is the type; the body carries no mediaType of its own.
+    shaped = shape_person({**raw, "mediaType": "person"})
+    if shaped is None:  # pragma: no cover -- upstream would have 404'd first
+        raise ValueError(f"jellyseerr returned no usable person {person_id}")
+    return shaped
+
+
+async def person_credits(
+    http: CachedHTTP, settings: Settings, person_id: int, ttl: float = 600
+) -> list[dict[str, Any]]:
+    """One person's *acting* credits, shaped as ordinary Discover cards.
+
+    Only ``cast`` is read. ``crew`` is a different question ("what did they
+    direct") and mixing the two produces a list where a producer credit on a
+    film they are not in sits next to their starring roles.
+
+    Three things happen to that array, in order:
+
+    * **Sorted by popularity**, which upstream does not do -- it returns
+      credits in TMDB's own order, which is neither chronological nor useful.
+      Sorting before the cut is what makes the cut keep the top rather than an
+      arbitrary slice.
+    * **De-duplicated**, on ``(media_type, tmdb_id)`` rather than the bare id.
+      TMDB emits one row per *credit*, so a second role in the same film is a
+      second row; and its id space is per media type, so film 13 and show 13
+      are two different titles that a bare-id key would silently merge.
+    * **Capped** at ``_MAX_CREDITS``.
+
+    Args:
+        http: Shared cached HTTP client.
+        settings: App settings.
+        person_id: TMDB person id.
+        ttl: Cache freshness window in seconds.
+
+    Returns:
+        Shaped cards, identical in shape to a search result -- which is what
+        lets the filmography reuse the poster tile and the request sheet
+        without a second code path. Non-title rows are dropped.
+
+    Raises:
+        UpstreamError: On a connect/transport error or non-2xx response.
+    """
+    raw = await http.get_json(
+        f"{_base(settings)}/person/{person_id}/combined_credits",
+        service="jellyseerr",
+        headers=_headers(settings),
+        ttl=ttl,
+    )
+
+    ranked = sorted(
+        raw.get("cast") or [],
+        key=lambda credit: credit.get("popularity") or 0,
+        reverse=True,
+    )
+
+    seen: set[tuple[str, int]] = set()
+    cards: list[dict[str, Any]] = []
+    for credit in ranked:
+        card = shape_media(credit)
+        if card is None:
+            continue
+        key = (card["media_type"], card["tmdb_id"])
+        if key in seen:
+            continue
+        seen.add(key)
+        cards.append(card)
+        if len(cards) >= _MAX_CREDITS:
+            break
+    return cards
 
 
 async def list_users(

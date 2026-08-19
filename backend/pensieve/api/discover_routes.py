@@ -7,6 +7,10 @@ Session-gated like every other member surface. Three reads and one write:
 * ``GET /api/discover/search?q=`` — Jellyseerr's combined index, cached 60s and
   bounded to 100 characters. The frontend debounces, but the bound is here:
   the query is a client-controlled string that becomes an upstream call.
+* ``GET /api/discover/suggest?q=`` — the same index and the same cache entry,
+  shaped for the type-ahead dropdown: people kept, list cut to eight.
+* ``GET /api/discover/person/{person_id}`` — one actor's filmography, acting
+  credits only, as ordinary Discover cards.
 * ``GET /api/discover/detail/{media_type}/{tmdb_id}`` — one title, plus the
   per-season availability the TV picker needs.
 * ``POST /api/discover/request`` — the only write, and the only place in
@@ -38,7 +42,7 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -60,6 +64,15 @@ _DETAIL_TTL = 60
 _BROWSE_TTL = 300
 #: Genre vocabularies are effectively static.
 _GENRES_TTL = 86400
+#: A filmography changes when someone shoots a film. The availability badges on
+#: it are the only part that moves, and ten minutes is well inside how long a
+#: download takes to become watchable.
+_PERSON_TTL = 600
+
+#: How many rows the type-ahead dropdown gets. A bound on the *route* rather
+#: than on the component: it is what the response promises, so a stale client
+#: cannot ask for a thousand.
+_SUGGEST_TAKE = 8
 
 _INSERT_EVENT = "INSERT INTO events (at, actor, action, detail) VALUES (?, ?, ?, ?)"
 
@@ -167,6 +180,69 @@ async def get_search(
     try:
         return {"items": await jellyseerr.search(http, settings, q, ttl=_SEARCH_TTL)}
     except UpstreamError as exc:
+        return _unreachable(exc)
+
+
+@router.get("/suggest", response_model=None)
+async def get_suggest(
+    request: Request,
+    q: Annotated[str, Query(min_length=1, max_length=100)],
+) -> dict[str, Any] | JSONResponse:
+    """Type-ahead matches for the Discover search field.
+
+    Separate from ``/search`` rather than folded into it, because the two
+    answer different questions: the grid is a list of things to request, and a
+    person is not one of those. Keeping them apart means the grid's contract
+    is untouched and no client has to filter a person out of a list of cards.
+    Both read the same upstream body from the same cache entry, so the second
+    of the two calls a keystroke fires costs nothing upstream.
+
+    Returns:
+        200 ``{"items": [...]}`` — up to eight rows, each either a title card
+        or ``{"person_id", "name", "profile_path", "media_type": "person"}``,
+        in upstream relevance order. 422 if ``q`` is empty or over 100
+        characters. 502 ``{"error": "jellyseerr unreachable"}``.
+    """
+    settings: Settings = request.app.state.settings
+    http: CachedHTTP = request.app.state.http
+
+    try:
+        return {
+            "items": await jellyseerr.suggest(
+                http, settings, q, ttl=_SEARCH_TTL, limit=_SUGGEST_TAKE
+            )
+        }
+    except UpstreamError as exc:
+        return _unreachable(exc)
+
+
+@router.get("/person/{person_id}", response_model=None)
+async def get_person(
+    person_id: Annotated[int, Path(ge=1)],
+    request: Request,
+) -> dict[str, Any] | JSONResponse:
+    """One actor and what they have acted in.
+
+    Acting credits only, most popular first, capped at fifty, and shaped like
+    every other Discover card — so each one opens the same detail sheet and
+    files through the same guarded request lane. See
+    ``clients.jellyseerr.person_credits``.
+
+    Returns:
+        200 ``{"person_id", "name", "profile_path", "items": [...]}``. 404
+        ``{"error": "not found"}`` if Jellyseerr has no such person — distinct
+        from a 502 for the same reason the title detail route makes that
+        distinction. 422 on a non-positive or non-numeric id. 502 ``{"error":
+        "jellyseerr unreachable"}``.
+    """
+    settings: Settings = request.app.state.settings
+    http: CachedHTTP = request.app.state.http
+
+    try:
+        return await discover.filmography(http, settings, person_id, ttl=_PERSON_TTL)
+    except UpstreamError as exc:
+        if exc.status == 404:
+            return JSONResponse({"error": "not found"}, status_code=404)
         return _unreachable(exc)
 
 

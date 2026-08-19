@@ -130,6 +130,53 @@ async def test_search_calls_endpoint_and_shapes(tmp_path):
     assert [row["title"] for row in rows] == ["The Matrix", "Threat Matrix"]
 
 
+async def test_search_percent_encodes_a_multi_word_query(tmp_path):
+    """A space must reach Jellyseerr as ``%20``, never as ``+``.
+
+    Jellyseerr answers a ``+`` with a 400 -- *"Parameter \'query\' must be url
+    encoded"* -- which this app turns into "jellyseerr unreachable". So every
+    search of more than one word failed, which is most searches for an actor
+    and a good share of searches for a film. httpx form-encodes the ``params``
+    mapping, so the fix is that the query cannot travel that way.
+    """
+    seen: list[str] = []
+
+    def handler(request):
+        seen.append(str(request.url))
+        return httpx.Response(200, json=SEARCH)
+
+    await jellyseerr.search(make_http(handler), make_settings(tmp_path), "tom hanks")
+
+    assert "query=tom%20hanks" in seen[0]
+    assert "+" not in seen[0]
+
+
+async def test_search_encodes_the_reserved_characters_too(tmp_path):
+    """``&`` in a title would otherwise open a second query parameter."""
+    seen: list[str] = []
+
+    def handler(request):
+        seen.append(str(request.url))
+        return httpx.Response(200, json=SEARCH)
+
+    await jellyseerr.search(make_http(handler), make_settings(tmp_path), "fire & blood")
+
+    assert "query=fire%20%26%20blood" in seen[0]
+    assert httpx.URL(seen[0]).params["query"] == "fire & blood"
+
+
+async def test_search_still_asks_for_the_first_page(tmp_path):
+    """Moving the query out of ``params`` must not drop what was in there."""
+    seen: list[httpx.URL] = []
+
+    def handler(request):
+        seen.append(request.url)
+        return httpx.Response(200, json=SEARCH)
+
+    await jellyseerr.search(make_http(handler), make_settings(tmp_path), "matrix")
+    assert seen[0].params["page"] == "1"
+
+
 async def test_search_propagates_upstream_failure(tmp_path):
     s = make_settings(tmp_path)
 

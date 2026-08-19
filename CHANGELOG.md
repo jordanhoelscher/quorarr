@@ -7,6 +7,51 @@ All notable changes to this project are documented here. The format is loosely
 Versions before 0.9.0 predate the public repository; they are summarised rather
 than itemised, since their history lives in a private monorepo.
 
+## [1.2.0] — 2026-08-18
+
+### Added
+
+- **Actors are searchable, and they have a page.** Typing in Discover now
+  raises a list of matches under the field — films and shows as before, and
+  the people in them, which the results grid has never been able to show
+  because a person is not something to request. Tapping one opens their
+  filmography: acting credits only, most popular first, capped at fifty, as
+  ordinary poster tiles that open the same detail sheet and file through the
+  same guarded request lane as anything else. This closes the gap where
+  "something with Tom Hanks in it" was a question the app could not be asked.
+- **Search suggestions.** The dropdown is debounced at two characters and
+  driven by arrows, Enter and Escape, with the highlight shared between the
+  keyboard and the mouse so the two can never disagree about what Enter would
+  take. Enter with nothing highlighted still submits the typed query rather
+  than the first guess. Pressing it, tapping outside, or leaving the field
+  dismisses the list; the full results grid underneath is unchanged.
+- `GET /api/discover/suggest?q=` and `GET /api/discover/person/{person_id}`,
+  both member-gated like their siblings. `suggest` reads the same Jellyseerr
+  search as `/search`, from the same cache entry — the two calls a keystroke
+  fires cost one upstream request between them — and differs only in keeping
+  people and cutting the list to eight.
+
+### Fixed
+
+- **Multi-word search reached Jellyseerr as `tom+hanks` and failed.** The query
+  travelled as a form-encoded parameter, so a space arrived as `+`; Jellyseerr
+  answers that with a 400 — *"Parameter 'query' must be url encoded"* — which
+  this app reported as "jellyseerr unreachable". Every search of more than one
+  word had been a 502 since Discover shipped, which is most searches for a
+  person and a good share of searches for a film. The query is now
+  percent-encoded into the URL, `&` and `=` included, so a title carrying one
+  cannot open a second parameter either.
+
+### Notes
+
+- Credits are de-duplicated on media type *and* TMDB id, not the id alone.
+  TMDB emits one row per credit, so a second role in the same film is a second
+  row; and its id space is per media type, so film 13 and show 13 are two
+  different titles a bare-id key would silently merge.
+- `/api/discover/search` is untouched: people are still dropped from it. The
+  grid's contract is that everything in it can be requested, and folding a
+  person into that list would have made every caller filter for one.
+
 ## [1.1.0] — 2026-08-15
 
 ### Added
